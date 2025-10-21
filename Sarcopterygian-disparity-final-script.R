@@ -23,6 +23,8 @@ library(dispRity)
 library(scales)
 library(ggpubr)
 library(forcats)
+library(readxl)
+library(writexl)
 
 ########################################################################################################
 ############################################# COLOR CODES ##############################################
@@ -36,7 +38,7 @@ cols_age <- c("Emsian" = "#e9ba6a", "Eifelian" = "#F1D576", "Givetian" = "#F1E18
 
 # Color for aquatic habitats #
 cols_habitats <- c("Freshwater" = "#00c5ff", "Marine" = "#0080ff", "Estuary" = "#00ffb9")
-cols_habitats2 <- c("Estuary" = "#00ffb9", "Bay" = "#ff9e00", "Oxbow lake/meandering river" = "#5a3801", "Calm  freshwater lake" = "#8407fa", "Dynamic freshwater lake" = "#470289", "Lagoon" = "#fd03f5", "Alluvial plain" = "#fdf503", "Delta" = "#fd0330","Coastal marine" = "#0d0299", "Reef" = "#049902")
+cols_habitats2 <- c("Other freshwater" = "#00c5ff", "Other marine" = "#0080ff", "Estuary" = "#00ffb9", "Bay" = "#ff9e00", "Oxbow lake/meandering river" = "#5a3801", "Calm  freshwater lake" = "#8407fa", "Dynamic freshwater lake" = "#470289", "Lagoon" = "#fd03f5", "Alluvial plain" = "#fdf503", "Delta" = "#fd0330","Coastal marine" = "#0d0299", "Reef" = "#049902")
 
 # Color for groups #
 cols_group <- c("Actinistia" = "#87CEFA", "Porolepiform" = "#FFA500", "Dipnoi" = "#FA8072", "Onychodontida" = "#1E90FF", "Osteolepiform" = "#32CD32", "Rhizodontida" = "#ADFF2F", "Elpistostegalia" = "#ffd496", "Tetrapoda" = "#6f4202") #Assign each group a color
@@ -89,8 +91,6 @@ convex.hulls <- function(data, name.x, name.y, name.fill){
 data(stages) # loading dataset from divDyn package containing information about chronostratigraphic chart
 stages_upd <- read_excel(file.choose(),1) #open stages-update.xlsx : the time for each stage from Ordovician, Silurian, Devonian and Carboniferous periods has been updated following the chronostratigraphic time chart 2024.
 
-# diversity species in morphological matrix
-
 list_sarco <- read_excel(file.choose(),1) #open Matrix-all-species.xlsx 
 list_sarco<- list_sarco %>%
   mutate_if(is.character, as.factor)
@@ -104,41 +104,17 @@ flDual <- fadlad(list_sarco, tax = "Species", age = c("max_ma", "min_ma")) # cre
 Sarco_occu <- divDyn(list_sarco, tax = "Species", age = "me_ma", breaks = c(425.6, 407.5,389.4,371.3,353.2,335.1,317,298.9)) #calculate occurrence for the timebins
 plot(Sarco_occu$me_ma, Sarco_occu$divSIB, xlim = rev(range(Sarco_occu$me_ma)))
 
+
 list_sarco$mid <- stages$mid[list_sarco$Time_bin] #create a new column in the dataframe with the median age of the timebin
 tsplot(stages_upd, shading="stage", boxes=c("short","series"),xlim=c(440,298.9), labels.args=list(cex=0.7), boxes.col=c("seriesCol", "systemCol")) #create background with the timechart
 divDyn::ranges(list_sarco, tax="Species", bin=c("max_ma","min_ma"), labs=T, labels.args=list(cex=0.6, font = 3), occs=TRUE, filt="orig") #add duration of each species; font = 3 is italic
+
 
 # Diveristy through time #
 Sarco_div <- divDyn(list_sarco, bin = "Time_bin", tax = "Species")
 
 tsplot(stages_upd, shading="stage", boxes=c("short", "series"), xlim=13:29, ylab="Richness (diversity)", ylim=c(0,25), labels.args = list(cex=0.7), boxes.col = c("seriesCol", "systemCol"))
 lines(stages$mid[27:42], Sarco_div$divRT[27:42], col="black", lwd=2)
-
-# diversity 279 early sarcopterygian species
-
-list_all <- read_excel(file.choose(),1) #open Matrix-all-species-diversity.xlsx 
-list_all<- list_all %>%
-  mutate_if(is.character, as.factor)
-
-list_all %>% mutate_at(c("max_ma", "min_ma"), as.numeric) #transform LAD/FAD column from character to numeric
-list_all$me_ma <- apply(list_all[, c("max_ma", "min_ma")], 1, mean) # calculate the median age of each species
-
-flDual_all <- fadlad(list_allo, tax = "Species", age = c("max_ma", "min_ma")) # create a species x FAD/LAD matrix
-
-# Occurrence sarcopterygian species #
-Sarco_occu_all <- divDyn(list_all, tax = "Species", age = "me_ma", breaks = c(425.6, 407.5,389.4,371.3,353.2,335.1,317,298.9)) #calculate occurrence for the timebins
-plot(Sarco_occu_all$me_ma, Sarco_occu_all$divSIB, xlim = rev(range(Sarco_occu_all$me_ma)))
-
-list_all$mid <- stages$mid[list_all$Time_bin] #create a new column in the dataframe with the median age of the timebin
-tsplot(stages_upd, shading="stage", boxes=c("short","series"),xlim=c(440,298.9), labels.args=list(cex=0.7), boxes.col=c("seriesCol", "systemCol")) #create background with the timechart
-divDyn::ranges(list_all, tax="Species", bin=c("max_ma","min_ma"), labs=T, labels.args=list(cex=0.6, font = 3), occs=TRUE, filt="orig") #add duration of each species; font = 3 is italic
-
-# Diveristy through time #
-Sarco_div_all <- divDyn(list_all, bin = "Time_bin", tax = "Species")
-
-tsplot(stages_upd, shading="stage", boxes=c("short", "series"), xlim=13:29, ylab="Richness (diversity)", ylim=c(0,70), labels.args = list(cex=0.7), boxes.col = c("seriesCol", "systemCol"))
-lines(stages$mid[27:42], Sarco_div_all$divRT[27:42], col="black", lwd=2)
-lines(stages$mid[27:42], Sarco_div$divRT[27:42], col="blue", lty= 2, lwd=2)
 
 ##############################################################################################################
 ########################################## HABITAT OCCUPATION ################################################
@@ -215,6 +191,9 @@ text(pca_PC[["x"]][,1], pca_PC[["x"]][,2], labels = name_PC) # PCA 1 vs 2
 plot_PC2_PC <- plot(pca_PC, axis1=2, axis2=3)
 text(pca_PC[["x"]][,2], pca_PC[["x"]][,3], labels = name_PC) # PCA 2 vs 3
 
+plot_PC3_PC4 <- plot(pca_PC, axis1 = 3, axis2 = 4)
+text(pca_PC[["x"]][,3], pca_PC[["x"]][,4], labels = name_PC) # PCA 3 vs 4
+
 # Saving PC scores #
 
 PC.scores_PC <- pca_PC$x 
@@ -226,7 +205,6 @@ write.csv(PC.scores_PC,"PC.scores_PC.csv",row.names=TRUE) # Save PC scores as a 
 
 ev_PC <- pca_PC$rotation
 write.csv(ev_PC, "eigenvectors-PC.csv")
-
 
 ##################################### Graphical representations ############################################
 
@@ -262,6 +240,22 @@ ggplot(as.data.frame(PC.scores_PC), aes(x=PC.scores_PC[,2], y=PC.scores_PC[,3], 
   theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), legend.position = "none") +
   labs(x = "PC2 = 14.94 %", y = "PC3 = 10.28 %" )
 
+
+#PC3 vs PC4 -- color epoch
+ggplot(as.data.frame(PC.scores_PC), aes(x=PC.scores_PC[,3], y=PC.scores_PC[,4], label = name_PC, fontface = "italic")) +
+  labs(fill="Epoque") +
+  coord_fixed(ratio = 1) +
+  geom_point(aes(fill = Period_sarco_PC$Epoque), color = "black", size = 6, shape = 21, stroke = 0.10)  +
+  scale_fill_manual(values = cols_epoch)+
+  lims(x=c(-0.5,0.3), y = c(-0.3,0.2)) +
+  theme_bw() +
+  theme(axis.text.x = element_text(size = 25, color="black", margin = margin(t = 5, r = 0, b = 0, l = 0)),
+        axis.text.y = element_text(size = 25, color="black", margin = margin(t = 0, r = 5, b = 0, l = 0)), 
+        axis.title.x = element_text(size = 29, margin = margin(t = 15, r = 0, b = 0, l = 0)), 
+        axis.title.y = element_text(size = 29, margin = margin(t = 0, r = 15, b = 0, l = 0))) +
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), legend.position = "none") +
+  labs(x = "PC3 = 10.28 %", y = "PC4 = 7.75 %" )
+
 #PC1 vs PC2 -- color Aquatic habitats 
 ggplot(as.data.frame(PC.scores_PC), aes(x=PC.scores_PC[,1], y=PC.scores_PC[,2], label = name_PC, fontface = "italic")) +
   labs(fill="Aquatic habitats") +
@@ -283,6 +277,51 @@ ggplot(as.data.frame(PC.scores_PC), aes(x=PC.scores_PC[,2], y=PC.scores_PC[,3], 
   coord_fixed(ratio = 1) +
   geom_point(aes(fill = Period_sarco_PC$`Aquatic habitat`), color = "black", size = 6, shape = 21, stroke = 0.10)  +
   scale_fill_manual(values = cols_habitats)+
+  lims(x=c(-0.5,0.3), y = c(-0.3,0.2)) +
+  theme_bw() +
+  theme(axis.text.x = element_text(size = 25, color="black", margin = margin(t = 5, r = 0, b = 0, l = 0)),
+        axis.text.y = element_text(size = 25, color="black", margin = margin(t = 0, r = 5, b = 0, l = 0)), 
+        axis.title.x = element_text(size = 29, margin = margin(t = 15, r = 0, b = 0, l = 0)), 
+        axis.title.y = element_text(size = 29, margin = margin(t = 0, r = 15, b = 0, l = 0))) +
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), legend.position = "none") +
+  labs(x = "PC2 = 14.94 %", y = "PC3 = 10.28 %" )
+
+#PC3 vs PC4 -- color Aquatic habitats  
+ggplot(as.data.frame(PC.scores_PC), aes(x=PC.scores_PC[,3], y=PC.scores_PC[,4], label = name_PC, fontface = "italic")) +
+  labs(fill="Aquatic habitat") +
+  coord_fixed(ratio = 1) +
+  geom_point(aes(fill = Period_sarco_PC$`Aquatic habitat`), color = "black", size = 6, shape = 21, stroke = 0.10)  +
+  scale_fill_manual(values = cols_habitats)+
+  lims(x=c(-0.5,0.3), y = c(-0.3,0.2)) +
+  theme_bw() +
+  theme(axis.text.x = element_text(size = 25, color="black", margin = margin(t = 5, r = 0, b = 0, l = 0)),
+        axis.text.y = element_text(size = 25, color="black", margin = margin(t = 0, r = 5, b = 0, l = 0)), 
+        axis.title.x = element_text(size = 29, margin = margin(t = 15, r = 0, b = 0, l = 0)), 
+        axis.title.y = element_text(size = 29, margin = margin(t = 0, r = 15, b = 0, l = 0))) +
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), legend.position = "none") +
+  labs(x = "PC3 = 10.28 %", y = "PC4 = 7.75 %" )
+
+#PC1 vs PC2 -- color more precise paleoenvironments
+ggplot(as.data.frame(PC.scores_PC), aes(x=PC.scores_PC[,1], y=PC.scores_PC[,2], label = name_PC, fontface = "italic")) +
+  labs(fill="Paleoenvironments") +
+  coord_fixed(ratio = 1) +
+  geom_point(aes(fill = Period_sarco_PC$Paleoenvironments), color = "black", size = 4, shape = 21, stroke = 0.10)  +
+  scale_fill_manual(values = cols_habitats2)+
+  lims(x=c(-0.5,0.3), y = c(-0.3,0.2)) +
+  theme_bw() +
+  theme(axis.text.x = element_text(size = 15, color="black", margin = margin(t = 5, r = 0, b = 0, l = 0)),
+        axis.text.y = element_text(size = 15, color="black", margin = margin(t = 0, r = 5, b = 0, l = 0)), 
+        axis.title.x = element_text(size = 15, margin = margin(t = 15, r = 0, b = 0, l = 0)), 
+        axis.title.y = element_text(size = 15, margin = margin(t = 0, r = 15, b = 0, l = 0))) +
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), legend.position = "none") +
+  labs(x = "PC1 = 49.20 %", y = "PC2 = 14.94 %" ) 
+
+#PC2 vs PC3 -- color more precise paleoenvironments
+ggplot(as.data.frame(PC.scores_PC), aes(x=PC.scores_PC[,2], y=PC.scores_PC[,3], label = name_PC, fontface = "italic")) +
+  labs(fill="Paleoenvironments") +
+  coord_fixed(ratio = 1) +
+  geom_point(aes(fill = Period_sarco_PC$Paleoenvironments), color = "black", size = 6, shape = 21, stroke = 0.10)  +
+  scale_fill_manual(values = cols_habitats2)+
   lims(x=c(-0.5,0.3), y = c(-0.3,0.2)) +
   theme_bw() +
   theme(axis.text.x = element_text(size = 25, color="black", margin = margin(t = 5, r = 0, b = 0, l = 0)),
@@ -322,6 +361,21 @@ ggplot(as.data.frame(PC.scores_PC), aes(x=PC.scores_PC[,2], y=PC.scores_PC[,3], 
         axis.title.y = element_text(size = 29, margin = margin(t = 0, r = 15, b = 0, l = 0))) +
   theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), legend.position = "none") +
   labs(x = "PC2 = 14.94 %", y = "PC3 = 10.28 %" )
+
+#PC2 vs PC3 -- color groups
+ggplot(as.data.frame(PC.scores_PC), aes(x=PC.scores_PC[,3], y=PC.scores_PC[,4], label = name_PC, fontface = "italic")) +
+  labs(fill="Group") +
+  coord_fixed(ratio = 1) +
+  geom_point(aes(fill = Period_sarco_PC$Group), color = "black", size = 6, shape = 21, stroke = 0.10)  +
+  scale_fill_manual(values = cols_group)+
+  lims(x=c(-0.5,0.3), y = c(-0.3,0.2)) +
+  theme_bw() +
+  theme(axis.text.x = element_text(size = 25, color="black", margin = margin(t = 5, r = 0, b = 0, l = 0)),
+        axis.text.y = element_text(size = 25, color="black", margin = margin(t = 0, r = 5, b = 0, l = 0)), 
+        axis.title.x = element_text(size = 29, margin = margin(t = 15, r = 0, b = 0, l = 0)), 
+        axis.title.y = element_text(size = 29, margin = margin(t = 0, r = 15, b = 0, l = 0))) +
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), legend.position = "none") +
+  labs(x = "PC3 = 10.28 %", y = "PC4 = 7.75 %" )
 
 ################### Calculating convex hulls for the PC1 vs PC2 #######################
 
@@ -373,6 +427,28 @@ ggplot(pca.class, aes(x = Comp1,y = Comp2, fill = Habitat, shape = Habitat)) +
   labs(x = "PC1 = 49.20 %", y = "PC2 = 14.94 %" ) +
   geom_polygon(data = CHull_habitat_PC.table, aes(x = X, y = Y), alpha = 0.5)
 
+# for the more precise paleoenvironments
+CHull_habitat2_PC <- convex.hulls(data = pca.class, name.x = "Comp1", name.y = "Comp2", name.fill = "Habitat2")
+
+CHull_habitat2_PC.table <- CHull_habitat2_PC$table
+CHull_habitat2_PC$surface_area
+
+ggplot(pca.class, aes(x = Comp1,y = Comp2, fill = Habitat2, shape = Habitat2)) +
+  labs(fill="Habitat2") +
+  coord_fixed(ratio = 1) +
+  geom_point(aes(fill = Habitat2), shape = 21, size = 3, stroke = 0.10) + 
+  scale_fill_manual(values = cols_habitats2) +
+  scale_color_manual(values= cols_habitats2)+
+  lims(x=c(-0.5,0.3), y = c(-0.3,0.2)) +
+  theme_bw() +
+  theme(axis.text.x = element_text(size = 15, color="black", margin = margin(t = 5, r = 0, b = 0, l = 0)),
+        axis.text.y = element_text(size = 15, color="black", margin = margin(t = 0, r = 5, b = 0, l = 0)), 
+        axis.title.x = element_text(size = 15, margin = margin(t = 15, r = 0, b = 0, l = 0)), 
+        axis.title.y = element_text(size = 15, margin = margin(t = 0, r = 15, b = 0, l = 0))) +
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), legend.position = "none") +
+  labs(x = "PC1 = 49.20 %", y = "PC2 = 14.94 %" ) +
+  geom_polygon(data = CHull_habitat2_PC.table, aes(x = X, y = Y), alpha = 0.5)
+
 # for the groups
 CHull_group_PC <- convex.hulls(data = pca.class, name.x = "Comp1", name.y = "Comp2", name.fill = "Group")
 
@@ -402,6 +478,8 @@ gdf_PC_epoch <- geomorph.data.frame(data.super_PC, species = Period_sarco_PC$Spe
 gdf_PC_age <- geomorph.data.frame(data.super_PC, species = Period_sarco_PC$Species, Time = Period_sarco_PC$Age) #gdf for the ages
 
 gdf_PC_habitat <- geomorph.data.frame(data.super_PC, species = Period_sarco_PC$Species, Habitat = Period_sarco_PC$`Aquatic habitat`) #gdf for the aquatic habitats
+  
+gdf_PC_habitat2 <- geomorph.data.frame(data.super_PC, species = Period_sarco_PC$Species, Habitat = Period_sarco_PC$Paleoenvironments) #gdf for the more precise paleoenvironments
 
 gdf_PC_gp <- geomorph.data.frame(data.super_PC, species = Period_sarco_PC$Species, Group = Period_sarco_PC$Group) #gdf for the groups
 
@@ -518,6 +596,8 @@ ggplot(DF_SoV.PC.epoch, aes(x=level_order, y=SoV, group = 1)) +
         axis.text.x = element_text(size = 14),
         axis.text.y = element_text(angle = 90, hjust=0.5, size = 14))
 
+
+
 # Contribution of each time bin : Pie chart
 
 PPV_PC.epoch <- c("4.6","18.7","38","35.5","3.2") # copy the SOV_mean_PC_epoch results
@@ -613,6 +693,61 @@ ggplot(DF_PPV.ah, aes(x="", y=PPV, fill=Habitat)) +
   scale_fill_manual(values = cols_habitats) +
   theme_void() #Pie chart
 
+
+# Sum of Procrustes variances : More precise aquatic habitats #########################
+
+SOV_mean_PC_pal <- morphol.disparity(coords ~ 1, groups= ~ Habitat, partial = TRUE, 
+                                    data = gdf_PC_habitat2, iter = 999, print.progress = FALSE) #calculate disparity of the time bins and comparing it to the grand mean
+
+summary(SOV_mean_PC_pal)
+
+SOV_PC_pal <- morphol.disparity(coords~Habitat,groups=~Habitat, data = gdf_PC_habitat2, iter = 999) # calculate the disparity within each bin, and compare that to the disparity within other bins. This tells me which time bin is most/least disparate
+
+summary(SOV_PC_pal)
+
+# Graphical representation #
+
+# Contribution of each time bin : Pie chart
+
+PPV_PC.pal <- c("4.6", "31.8", "12.1", "3.2", "7.5", "14.7", "6.2", "4.6", "2", "13.3") # copy the SOV_mean_PC_pal results
+Habitat2 <- c("Alluvial plain", "Bay", "Calm freshwater lake", "Delta", "Dynamic freshwater lake", "Estuary", "Freshwater", "Lagoon", "Marine", "Oxbow lake/meandering river")
+PPV_PC.pal <- as.numeric(as.character(PPV_PC.pal))
+Habitat2 <- as.factor(as.character(Habitat2))
+
+DF_PPV.pal <- data.frame(Habitats = Habitat2, PPV = PPV_PC.pal)
+DF_PPV.pal # Create data frame Paleoenvironment x Proportion of variance
+
+# Compute percentages
+DF_PPV.pal$fraction = DF_PPV.pal$PPV / sum(DF_PPV.pal$PPV)
+
+# Compute the cumulative percentages (top of each rectangle)
+DF_PPV.pal$ymax = cumsum(DF_PPV.pal$fraction)
+
+# Compute the bottom of each rectangle
+DF_PPV.pal$ymin = c(0, head(DF_PPV.pal$ymax, n=-1))
+
+DF_PPV.pal$labelPosition <- (DF_PPV.pal$ymax + DF_PPV.pal$ymin) / 2
+
+# Compute a good label
+DF_PPV.pal$label <- paste0(DF_PPV.pal$PPV)
+
+# Make the plot
+ggplot(DF_PPV.pal, aes(ymax=ymax, ymin=ymin, xmax=4, xmin=3, fill=Habitat2)) +
+  geom_rect() + 
+  coord_polar(theta="y") +
+  scale_fill_manual(values = cols_habitats2) +
+  xlim(c(2, 4)) +
+  geom_label( x=3.5, aes(y=labelPosition, label=label, size=6)) +
+  theme_void() +
+  theme(legend.position = "none") #donut chart
+
+ggplot(DF_PPV.pal, aes(x="", y=PPV, fill=Habitat2)) +
+  geom_bar(stat="identity", width=1) +
+  coord_polar("y", start=0) +
+  scale_fill_manual(values = cols_habitats2) +
+  theme_void() #Pie chart
+
+
 # Sum of Procrustes variances :  groups #########################
 
 SOV_mean_PC_gp <- morphol.disparity(coords ~ 1, groups= ~ Group, partial = TRUE, 
@@ -706,6 +841,9 @@ text(pca_Cheek[["x"]][,1], pca_Cheek[["x"]][,2], labels = name_Cheek) # PCA 1 vs
 plot_PC2_Cheek <- plot(pca_Cheek, axis1=2, axis2=3)
 text(pca_Cheek[["x"]][,2], pca_Cheek[["x"]][,3], labels = name_Cheek) # PCA 2 vs 3
 
+plot_PC3_Cheek <- plot(pca_Cheek, axis1=3, axis2=4)
+text(pca_Cheek[["x"]][,3], pca_Cheek[["x"]][,4], labels = name_Cheek) # PCA 2 vs 3
+
 # Saving PC scores #
 
 PC.scores_Cheek <- pca_Cheek$x 
@@ -752,6 +890,21 @@ ggplot(as.data.frame(PC.scores_Cheek), aes(x=PC.scores_Cheek[,2], y=PC.scores_Ch
   theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), legend.position = "none") +
   labs(x = "PC2 = 15.48 %", y = "PC3 = 9.40 %" )
 
+#PC3 vs PC4 -- color epoch
+ggplot(as.data.frame(PC.scores_Cheek), aes(x=PC.scores_Cheek[,3], y=PC.scores_Cheek[,4], label = name_Cheek, fontface = "italic")) +
+  labs(fill="Epoque") +
+  coord_fixed(ratio = 1) +
+  geom_point(aes(fill = Period_sarco_Cheek$Epoque), color = "black", size = 4, shape = 21, stroke = 0.10)  +
+  scale_fill_manual(values = cols_epoch)+
+  lims(x=c(-0.6,0.5), y = c(-0.3,0.3)) +
+  theme_bw() +
+  theme(axis.text.x = element_text(size = 25, color="black", margin = margin(t = 5, r = 0, b = 0, l = 0)),
+        axis.text.y = element_text(size = 25, color="black", margin = margin(t = 0, r = 5, b = 0, l = 0)), 
+        axis.title.x = element_text(size = 29, margin = margin(t = 15, r = 0, b = 0, l = 0)), 
+        axis.title.y = element_text(size = 29, margin = margin(t = 0, r = 15, b = 0, l = 0))) +
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), legend.position = "none") +
+  labs(x = "PC3 = 9.40 %", y = "PC4 = 5.44 %" )
+
 #PC1 vs PC2 -- color Aquatic habitats 
 ggplot(as.data.frame(PC.scores_Cheek), aes(x=PC.scores_Cheek[,1], y=PC.scores_Cheek[,2], label = name_Cheek, fontface = "italic")) +
   labs(fill="Aquatic habitats") +
@@ -773,6 +926,51 @@ ggplot(as.data.frame(PC.scores_Cheek), aes(x=PC.scores_Cheek[,2], y=PC.scores_Ch
   coord_fixed(ratio = 1) +
   geom_point(aes(fill = Period_sarco_Cheek$`Aquatic habitat`), color = "black", size = 4, shape = 21, stroke = 0.10)  +
   scale_fill_manual(values = cols_habitats)+
+  lims(x=c(-0.6,0.5), y = c(-0.3,0.3)) +
+  theme_bw() +
+  theme(axis.text.x = element_text(size = 25, color="black", margin = margin(t = 5, r = 0, b = 0, l = 0)),
+        axis.text.y = element_text(size = 25, color="black", margin = margin(t = 0, r = 5, b = 0, l = 0)), 
+        axis.title.x = element_text(size = 29, margin = margin(t = 15, r = 0, b = 0, l = 0)), 
+        axis.title.y = element_text(size = 29, margin = margin(t = 0, r = 15, b = 0, l = 0))) +
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), legend.position = "none") +
+  labs(x = "PC2 = 15.48 %", y = "PC3 = 9.40 %" )
+
+#PC3 vs PC4 -- color Aquatic habitats  
+ggplot(as.data.frame(PC.scores_Cheek), aes(x=PC.scores_Cheek[,3], y=PC.scores_Cheek[,4], label = name_Cheek, fontface = "italic")) +
+  labs(fill="Aquatic habitat") +
+  coord_fixed(ratio = 1) +
+  geom_point(aes(fill = Period_sarco_Cheek$`Aquatic habitat`), color = "black", size = 4, shape = 21, stroke = 0.10)  +
+  scale_fill_manual(values = cols_habitats)+
+  lims(x=c(-0.6,0.5), y = c(-0.3,0.3)) +
+  theme_bw() +
+  theme(axis.text.x = element_text(size = 25, color="black", margin = margin(t = 5, r = 0, b = 0, l = 0)),
+        axis.text.y = element_text(size = 25, color="black", margin = margin(t = 0, r = 5, b = 0, l = 0)), 
+        axis.title.x = element_text(size = 29, margin = margin(t = 15, r = 0, b = 0, l = 0)), 
+        axis.title.y = element_text(size = 29, margin = margin(t = 0, r = 15, b = 0, l = 0))) +
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), legend.position = "none") +
+  labs(x = "PC3 = 9.40 %", y = "PC4 = 5.44 %" )
+
+#PC1 vs PC2 -- color more precise paleoenvironments
+ggplot(as.data.frame(PC.scores_Cheek), aes(x=PC.scores_Cheek[,1], y=PC.scores_Cheek[,2], label = name_Cheek, fontface = "italic")) +
+  labs(fill="Paleoenvironments") +
+  coord_fixed(ratio = 1) +
+  geom_point(aes(fill = Period_sarco_Cheek$Paleoenvironments), color = "black", size = 4, shape = 21, stroke = 0.10)  +
+  scale_fill_manual(values = cols_habitats2)+
+  lims(x=c(-0.8,0.6), y = c(-0.6,0.5)) +
+  theme_bw() +
+  theme(axis.text.x = element_text(size = 15, color="black", margin = margin(t = 5, r = 0, b = 0, l = 0)),
+        axis.text.y = element_text(size = 15, color="black", margin = margin(t = 0, r = 5, b = 0, l = 0)), 
+        axis.title.x = element_text(size = 15, margin = margin(t = 15, r = 0, b = 0, l = 0)), 
+        axis.title.y = element_text(size = 15, margin = margin(t = 0, r = 15, b = 0, l = 0))) +
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), legend.position = "none") +
+  labs(x = "PC1 = 40.25 %", y = "PC2 = 15.48 %" ) 
+
+#PC2 vs PC3 -- color more precise paleoenvironments
+ggplot(as.data.frame(PC.scores_Cheek), aes(x=PC.scores_Cheek[,2], y=PC.scores_Cheek[,3], label = name_Cheek, fontface = "italic")) +
+  labs(fill="Paleoenvironments") +
+  coord_fixed(ratio = 1) +
+  geom_point(aes(fill = Period_sarco_Cheek$Paleoenvironments), color = "black", size = 4, shape = 21, stroke = 0.10)  +
+  scale_fill_manual(values = cols_habitats2)+
   lims(x=c(-0.6,0.5), y = c(-0.3,0.3)) +
   theme_bw() +
   theme(axis.text.x = element_text(size = 25, color="black", margin = margin(t = 5, r = 0, b = 0, l = 0)),
@@ -811,6 +1009,21 @@ ggplot(as.data.frame(PC.scores_Cheek), aes(x=PC.scores_Cheek[,2], y=PC.scores_Ch
         axis.title.y = element_text(size = 29, margin = margin(t = 0, r = 15, b = 0, l = 0))) +
   theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), legend.position = "none") +
   labs(x = "PC2 = 15.48 %", y = "PC3 = 9.40 %" )
+
+#PC3 vs PC4 -- color groups
+ggplot(as.data.frame(PC.scores_Cheek), aes(x=PC.scores_Cheek[,3], y=PC.scores_Cheek[,4], label = name_Cheek, fontface = "italic")) +
+  labs(fill="Group") +
+  coord_fixed(ratio = 1) +
+  geom_point(aes(fill = Period_sarco_Cheek$Group), color = "black", size = 4, shape = 21, stroke = 0.10)  +
+  scale_fill_manual(values = cols_group)+
+  lims(x=c(-0.6,0.5), y = c(-0.3,0.3)) +
+  theme_bw() +
+  theme(axis.text.x = element_text(size = 25, color="black", margin = margin(t = 5, r = 0, b = 0, l = 0)),
+        axis.text.y = element_text(size = 25, color="black", margin = margin(t = 0, r = 5, b = 0, l = 0)), 
+        axis.title.x = element_text(size = 29, margin = margin(t = 15, r = 0, b = 0, l = 0)), 
+        axis.title.y = element_text(size = 29, margin = margin(t = 0, r = 15, b = 0, l = 0))) +
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), legend.position = "none") +
+  labs(x = "PC3 = 9.40 %", y = "PC4 = 5.44 %" )
 
 ################### Calculating convex hulls for the PC1 vs PC2 #######################
 
@@ -862,6 +1075,28 @@ ggplot(pca.class, aes(x = Comp1,y = Comp2, fill = Habitat)) +
   labs(x = "PC1 = 40.25 %", y = "PC2 = 15.48 %" ) +
   geom_polygon(data = CHull_habitat_Cheek.table, aes(x = X, y = Y), alpha = 0.5)
 
+# for the more precise paleoenvironments
+CHull_habitat2_Cheek <- convex.hulls(data = pca.class, name.x = "Comp1", name.y = "Comp2", name.fill = "Habitat2")
+
+CHull_habitat2_Cheek.table <- CHull_habitat2_Cheek$table
+CHull_habitat2_Cheek$surface_area
+
+ggplot(pca.class, aes(x = Comp1,y = Comp2, fill = Habitat2)) +
+  labs(fill="Habitat2") +
+  coord_fixed(ratio = 1) +
+  geom_point(aes(fill = Habitat2), shape = 21, size = 5, stroke = 0.10) + 
+  scale_fill_manual(values = cols_habitats2) +
+  scale_color_manual(values= cols_habitats2)+
+  lims(x=c(-0.7,0.6), y = c(-0.5,0.4)) +
+  theme_bw() +
+  theme(axis.text.x = element_text(size = 15, color="black", margin = margin(t = 5, r = 0, b = 0, l = 0)),
+        axis.text.y = element_text(size = 15, color="black", margin = margin(t = 0, r = 5, b = 0, l = 0)), 
+        axis.title.x = element_text(size = 15, margin = margin(t = 15, r = 0, b = 0, l = 0)), 
+        axis.title.y = element_text(size = 15, margin = margin(t = 0, r = 15, b = 0, l = 0))) +
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), legend.position = "none") +
+  labs(x = "PC1 = 40.25 %", y = "PC2 = 15.48 %" ) +
+  geom_polygon(data = CHull_habitat2_Cheek.table, aes(x = X, y = Y), alpha = 0.5)
+
 # for the groups
 CHull_group_Cheek <- convex.hulls(data = pca.class, name.x = "Comp1", name.y = "Comp2", name.fill = "Group")
 
@@ -892,6 +1127,8 @@ gdf_Cheek_epoch <- geomorph.data.frame(data.super_Cheek, species = Period_sarco_
 gdf_Cheek_age <- geomorph.data.frame(data.super_Cheek, species = Period_sarco_Cheek$Species, Time = Period_sarco_Cheek$Age) #gdf for the ages
 
 gdf_Cheek_habitat <- geomorph.data.frame(data.super_Cheek, species = Period_sarco_Cheek$Species, Habitat = Period_sarco_Cheek$`Aquatic habitat`) #gdf for the aquatic habitats
+
+gdf_Cheek_habitat2 <- geomorph.data.frame(data.super_Cheek, species = Period_sarco_Cheek$Species, Habitat = Period_sarco_Cheek$Paleoenvironments) #gdf for the more precise paleoenvironments
 
 gdf_Cheek_gp <- geomorph.data.frame(data.super_Cheek, species = Period_sarco_Cheek$Species, Group = Period_sarco_Cheek$Group) #gdf for the groups
 
@@ -1101,6 +1338,61 @@ ggplot(DF_PPV.ah, aes(x="", y=PPV, fill=Habitat)) +
   scale_fill_manual(values = cols_habitats) +
   theme_void() #Pie chart
 
+
+# Sum of Procrustes variances : More precise aquatic habitats #########################
+
+SOV_mean_Cheek_pal <- morphol.disparity(coords ~ 1, groups= ~ Habitat, partial = TRUE, 
+                                     data = gdf_Cheek_habitat2, iter = 999, print.progress = FALSE) #calculate disparity of the time bins and comparing it to the grand mean
+
+summary(SOV_mean_Cheek_pal)
+
+SOV_Cheek_pal <- morphol.disparity(coords~Habitat,groups=~Habitat, data = gdf_Cheek_habitat2, iter = 999) # calculate the disparity within each bin, and compare that to the disparity within other bins. This tells which time bin is most/least disparate
+
+summary(SOV_Cheek_pal)
+
+# Graphical representation #
+
+# Contribution of each time bin : Pie chart
+
+PPV_Cheek.pal <- c("5.728", "27.052", "4.314", "0.903", "15.681", "10.632", "18.231", "1.453", "3.726", "3.669", "8.611") # copy the SOV_mean_Cheek_pal results
+Habitat2 <- c("Alluvial plain", "Bay", "Calm freshwater lake", "Dynamic freshwater lake", "Estuary", "Freshwater", "Lagoon", "Marine", "Marginal marine", "Oxbow lake/meandering river", "Reef")
+PPV_Cheek.pal <- as.numeric(as.character(PPV_Cheek.pal))
+Habitat2 <- as.factor(as.character(Habitat2))
+
+DF_PPV.pal <- data.frame(Habitats = Habitat2, PPV = PPV_Cheek.pal)
+DF_PPV.pal # Create data frame Paleoenvironment x Proportion of variance
+
+# Compute percentages
+DF_PPV.pal$fraction = DF_PPV.pal$PPV / sum(DF_PPV.pal$PPV)
+
+# Compute the cumulative percentages (top of each rectangle)
+DF_PPV.pal$ymax = cumsum(DF_PPV.pal$fraction)
+
+# Compute the bottom of each rectangle
+DF_PPV.pal$ymin = c(0, head(DF_PPV.pal$ymax, n=-1))
+
+DF_PPV.pal$labelPosition <- (DF_PPV.pal$ymax + DF_PPV.pal$ymin) / 2
+
+# Compute a good label
+DF_PPV.pal$label <- paste0(DF_PPV.pal$PPV)
+
+# Make the plot
+ggplot(DF_PPV.pal, aes(ymax=ymax, ymin=ymin, xmax=4, xmin=3, fill=Habitat2)) +
+  geom_rect() + 
+  coord_polar(theta="y") +
+  scale_fill_manual(values = cols_habitats2) +
+  xlim(c(2, 4)) +
+  geom_label( x=3.5, aes(y=labelPosition, label=label, size=6)) +
+  theme_void() +
+  theme(legend.position = "none") #donut chart
+
+ggplot(DF_PPV.pal, aes(x="", y=PPV, fill=Habitat2)) +
+  geom_bar(stat="identity", width=1) +
+  coord_polar("y", start=0) +
+  scale_fill_manual(values = cols_habitats2) +
+  theme_void() #Pie chart
+
+
 # Sum of Procrustes variances :  groups #########################
 
 SOV_mean_Cheek_gp <- morphol.disparity(coords ~ 1, groups= ~ Group, partial = TRUE, 
@@ -1218,6 +1510,9 @@ text(pca_sym.SR[["x"]][,1], pca_sym.SR[["x"]][,2], labels = name_SR) # PCA 1 vs 
 plot_PC2_SR <- plot(pca_sym.SR, axis1=2, axis2=3)
 text(pca_sym.SR[["x"]][,2], pca_sym.SR[["x"]][,3], labels = name_SR) # PCA 2 vs 3
 
+plot_PC3_SR <- plot(pca_sym.SR, axis1=3, axis2=4)
+text(pca_sym.SR[["x"]][,3], pca_sym.SR[["x"]][,4], labels = name_SR) # PCA 2 vs 3
+
 # Saving PC scores #
 
 PC.scores_SR <- pca_sym.SR$x 
@@ -1264,6 +1559,21 @@ ggplot(as.data.frame(PC.scores_SR), aes(x=PC.scores_SR[,2], y=PC.scores_SR[,3], 
   theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), legend.position = "none") +
   labs(x = "PC2 = 17.59 %", y = "PC3 = 10.59 %" )
 
+#PC3 vs PC4 -- color epoch
+ggplot(as.data.frame(PC.scores_SR), aes(x=PC.scores_SR[,3], y=PC.scores_SR[,4], label = name_SR, fontface = "italic")) +
+  labs(fill="Epoque") +
+  coord_fixed(ratio = 1) +
+  geom_point(aes(fill = Period_sarco_SR$Epoque), color = "black", size = 4, shape = 21, stroke = 0.10)  +
+  scale_fill_manual(values = cols_epoch)+
+  lims(x=c(-0.3,0.3), y = c(-0.2,0.3)) +
+  theme_bw() +
+  theme(axis.text.x = element_text(size = 25, color="black", margin = margin(t = 5, r = 0, b = 0, l = 0)),
+        axis.text.y = element_text(size = 25, color="black", margin = margin(t = 0, r = 5, b = 0, l = 0)), 
+        axis.title.x = element_text(size = 29, margin = margin(t = 15, r = 0, b = 0, l = 0)), 
+        axis.title.y = element_text(size = 29, margin = margin(t = 0, r = 15, b = 0, l = 0))) +
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), legend.position = "none") +
+  labs(x = "PC3 = 10.59 %", y = "PC4 = 5.21 %" )
+
 #PC1 vs PC2 -- color Aquatic habitats 
 ggplot(as.data.frame(PC.scores_SR), aes(x=PC.scores_SR[,1], y=PC.scores_SR[,2], label = name_SR, fontface = "italic")) +
   labs(fill="Aquatic habitats") +
@@ -1285,6 +1595,52 @@ ggplot(as.data.frame(PC.scores_SR), aes(x=PC.scores_SR[,2], y=PC.scores_SR[,3], 
   coord_fixed(ratio = 1) +
   geom_point(aes(fill = Period_sarco_SR$`Aquatic habitat`), color = "black", size = 4, shape = 21, stroke = 0.10)  +
   scale_fill_manual(values = cols_habitats)+
+  lims(x=c(-0.3,0.3), y = c(-0.2,0.3)) +
+  theme_bw() +
+  theme(axis.text.x = element_text(size = 25, color="black", margin = margin(t = 5, r = 0, b = 0, l = 0)),
+        axis.text.y = element_text(size = 25, color="black", margin = margin(t = 0, r = 5, b = 0, l = 0)), 
+        axis.title.x = element_text(size = 29, margin = margin(t = 15, r = 0, b = 0, l = 0)), 
+        axis.title.y = element_text(size = 29, margin = margin(t = 0, r = 15, b = 0, l = 0))) +
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), legend.position = "none") +
+  labs(x = "PC2 = 17.59 %", y = "PC3 = 10.59 %" )
+
+#PC3 vs PC4 -- color Aquatic habitats  
+ggplot(as.data.frame(PC.scores_SR), aes(x=PC.scores_SR[,3], y=PC.scores_SR[,4], label = name_SR, fontface = "italic")) +
+  labs(fill="Aquatic habitat") +
+  coord_fixed(ratio = 1) +
+  geom_point(aes(fill = Period_sarco_SR$`Aquatic habitat`), color = "black", size = 4, shape = 21, stroke = 0.10)  +
+  scale_fill_manual(values = cols_habitats)+
+  lims(x=c(-0.3,0.3), y = c(-0.2,0.3)) +
+  theme_bw() +
+  theme(axis.text.x = element_text(size = 25, color="black", margin = margin(t = 5, r = 0, b = 0, l = 0)),
+        axis.text.y = element_text(size = 25, color="black", margin = margin(t = 0, r = 5, b = 0, l = 0)), 
+        axis.title.x = element_text(size = 29, margin = margin(t = 15, r = 0, b = 0, l = 0)), 
+        axis.title.y = element_text(size = 29, margin = margin(t = 0, r = 15, b = 0, l = 0))) +
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), legend.position = "none") +
+  labs(x = "PC3 = 10.59 %", y = "PC4 = 5.21 %" )
+
+
+#PC1 vs PC2 -- color more precise paleoenvironments
+ggplot(as.data.frame(PC.scores_SR), aes(x=PC.scores_SR[,1], y=PC.scores_SR[,2], label = name_SR, fontface = "italic")) +
+  labs(fill="Paleoenvironments") +
+  coord_fixed(ratio = 1) +
+  geom_point(aes(fill = Period_sarco_SR$Paleoenvironments), color = "black", size = 4, shape = 21, stroke = 0.10)  +
+  scale_fill_manual(values = cols_habitats2)+
+  lims(x=c(-0.4,0.4), y = c(-0.3,0.3))+
+  theme_bw() +
+  theme(axis.text.x = element_text(size = 15, color="black", margin = margin(t = 5, r = 0, b = 0, l = 0)),
+        axis.text.y = element_text(size = 15, color="black", margin = margin(t = 0, r = 5, b = 0, l = 0)), 
+        axis.title.x = element_text(size = 15, margin = margin(t = 15, r = 0, b = 0, l = 0)), 
+        axis.title.y = element_text(size = 15, margin = margin(t = 0, r = 15, b = 0, l = 0))) +
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), legend.position = "none") +
+  labs(x = "PC1 = 52.46 %", y = "PC2 = 17.59 %" )  
+
+#PC2 vs PC3 -- color more precise paleoenvironments
+ggplot(as.data.frame(PC.scores_SR), aes(x=PC.scores_SR[,2], y=PC.scores_SR[,3], label = name_SR, fontface = "italic")) +
+  labs(fill="Paleoenvironments") +
+  coord_fixed(ratio = 1) +
+  geom_point(aes(fill = Period_sarco_SR$Paleoenvironments), color = "black", size = 4, shape = 21, stroke = 0.10)  +
+  scale_fill_manual(values = cols_habitats2)+
   lims(x=c(-0.3,0.3), y = c(-0.2,0.3)) +
   theme_bw() +
   theme(axis.text.x = element_text(size = 25, color="black", margin = margin(t = 5, r = 0, b = 0, l = 0)),
@@ -1323,6 +1679,21 @@ ggplot(as.data.frame(PC.scores_SR), aes(x=PC.scores_SR[,2], y=PC.scores_SR[,3], 
         axis.title.y = element_text(size = 29, margin = margin(t = 0, r = 15, b = 0, l = 0))) +
   theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), legend.position = "none") +
   labs(x = "PC2 = 17.59 %", y = "PC3 = 10.59 %" )
+
+#PC3 vs PC4 -- color groups
+ggplot(as.data.frame(PC.scores_SR), aes(x=PC.scores_SR[,3], y=PC.scores_SR[,4], label = name_SR, fontface = "italic")) +
+  labs(fill="Group") +
+  coord_fixed(ratio = 1) +
+  geom_point(aes(fill = Period_sarco_SR$Group), color = "black", size = 4, shape = 21, stroke = 0.10)  +
+  scale_fill_manual(values = cols_group)+
+  lims(x=c(-0.3,0.3), y = c(-0.2,0.3)) +
+  theme_bw() +
+  theme(axis.text.x = element_text(size = 25, color="black", margin = margin(t = 5, r = 0, b = 0, l = 0)),
+        axis.text.y = element_text(size = 25, color="black", margin = margin(t = 0, r = 5, b = 0, l = 0)), 
+        axis.title.x = element_text(size = 29, margin = margin(t = 15, r = 0, b = 0, l = 0)), 
+        axis.title.y = element_text(size = 29, margin = margin(t = 0, r = 15, b = 0, l = 0))) +
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), legend.position = "none") +
+  labs(x = "PC3 = 10.59 %", y = "PC4 = 5.21 %" )
 
 ################### Calculating convex hulls for the PC1 vs PC2 #######################
 
@@ -1374,6 +1745,28 @@ ggplot(pca.class, aes(x = Comp1,y = Comp2, fill = Habitat, shape = Habitat)) +
   labs(x = "PC1 = 52.46 %", y = "PC2 = 17.59 %" ) +
   geom_polygon(data = CHull_habitat_SR.table, aes(x = X, y = Y), alpha = 0.5)
 
+# for the more precise paleoenvironments
+CHull_habitat2_SR <- convex.hulls(data = pca.class, name.x = "Comp1", name.y = "Comp2", name.fill = "Habitat2")
+
+CHull_habitat2_SR.table <- CHull_habitat2_SR$table
+CHull_habitat2_SR$surface_area
+
+ggplot(pca.class, aes(x = Comp1,y = Comp2, fill = Habitat2)) +
+  labs(fill="Habitat2") +
+  coord_fixed(ratio = 1) +
+  geom_point(aes(fill = Habitat2), shape = 21, size = 5, stroke = 0.10) + 
+  scale_fill_manual(values = cols_habitats2) +
+  scale_color_manual(values= cols_habitats2)+
+  lims(x=c(-0.7,0.7), y = c(-0.45,0.35))+
+  theme_bw() +
+  theme(axis.text.x = element_text(size = 15, color="black", margin = margin(t = 5, r = 0, b = 0, l = 0)),
+        axis.text.y = element_text(size = 15, color="black", margin = margin(t = 0, r = 5, b = 0, l = 0)), 
+        axis.title.x = element_text(size = 15, margin = margin(t = 15, r = 0, b = 0, l = 0)), 
+        axis.title.y = element_text(size = 15, margin = margin(t = 0, r = 15, b = 0, l = 0))) +
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), legend.position = "none") +
+  labs(x = "PC1 = 52.46 %", y = "PC2 = 17.59 %" ) +
+  geom_polygon(data = CHull_habitat2_SR.table, aes(x = X, y = Y), alpha = 0.5)
+
 # for the groups
 CHull_group_SR <- convex.hulls(data = pca.class, name.x = "Comp1", name.y = "Comp2", name.fill = "Group")
 
@@ -1407,6 +1800,9 @@ names(gdf_SR_age)<-c("coords", "species", "Time")
 
 gdf_SR_habitat <- geomorph.data.frame(sym$symm.shape, species = Period_sarco_SR$Species, Habitat = Period_sarco_SR$`Aquatic habitat`) #gdf for the aquatic habitats
 names(gdf_SR_habitat)<-c("coords", "species", "Habitat")
+
+gdf_SR_habitat2 <- geomorph.data.frame(sym$symm.shape, species = Period_sarco_SR$Species, Habitat = Period_sarco_SR$Paleoenvironments) #gdf for the more precise paleoenvironments
+names(gdf_SR_habitat2)<-c("coords", "species", "Habitat")
 
 gdf_SR_gp <- geomorph.data.frame(sym$symm.shape, species = Period_sarco_SR$Species, Group = Period_sarco_SR$Group) #gdf for the groups
 names(gdf_SR_gp)<-c("coords", "species", "Group")
@@ -1617,6 +2013,61 @@ ggplot(DF_PPV.ah, aes(x="", y=PPV, fill=Habitat)) +
   scale_fill_manual(values = cols_habitats) +
   theme_void() #Pie chart
 
+
+# Sum of Procrustes variances : More precise aquatic habitats #########################
+
+SOV_mean_SR_pal <- morphol.disparity(coords ~ 1, groups= ~ Habitat, partial = TRUE, 
+                                        data = gdf_SR_habitat2, iter = 999, print.progress = FALSE) #calculate disparity of the time bins and comparing it to the grand mean
+
+summary(SOV_mean_SR_pal)
+
+SOV_SR_pal <- morphol.disparity(coords~Habitat,groups=~Habitat, data = gdf_SR_habitat2, iter = 999) # calculate the disparity within each bin, and compare that to the disparity within other bins. This tells which time bin is most/least disparate
+
+summary(SOV_SR_pal)
+
+# Graphical representation #
+
+# Contribution of each time bin : Pie chart
+
+PPV_SR.pal <- c("5.3", "6.79", "17.64", "15.60", "12.41", "15.72", "0.61", "1.68", "10.57", "13.68") # copy the SOV_mean_SR_pal results
+Habitat2 <- c("Alluvial plain", "Bay", "Calm freshwater lake", "Estuary", "Freshwater", "Lagoon", "Marine", "Marginal marine", "Oxbow lake/meandering river", "Reef")
+PPV_SR.pal <- as.numeric(as.character(PPV_SR.pal))
+Habitat2 <- as.factor(as.character(Habitat2))
+
+DF_PPV.pal <- data.frame(Habitats = Habitat2, PPV = PPV_SR.pal)
+DF_PPV.pal # Create data frame Paleoenvironment x Proportion of variance
+
+# Compute percentages
+DF_PPV.pal$fraction = DF_PPV.pal$PPV / sum(DF_PPV.pal$PPV)
+
+# Compute the cumulative percentages (top of each rectangle)
+DF_PPV.pal$ymax = cumsum(DF_PPV.pal$fraction)
+
+# Compute the bottom of each rectangle
+DF_PPV.pal$ymin = c(0, head(DF_PPV.pal$ymax, n=-1))
+
+DF_PPV.pal$labelPosition <- (DF_PPV.pal$ymax + DF_PPV.pal$ymin) / 2
+
+# Compute a good label
+DF_PPV.pal$label <- paste0(DF_PPV.pal$PPV)
+
+# Make the plot
+ggplot(DF_PPV.pal, aes(ymax=ymax, ymin=ymin, xmax=4, xmin=3, fill=Habitat2)) +
+  geom_rect() + 
+  coord_polar(theta="y") +
+  scale_fill_manual(values = cols_habitats2) +
+  xlim(c(2, 4)) +
+  geom_label( x=3.5, aes(y=labelPosition, label=label, size=6)) +
+  theme_void() +
+  theme(legend.position = "none") #donut chart
+
+ggplot(DF_PPV.pal, aes(x="", y=PPV, fill=Habitat2)) +
+  geom_bar(stat="identity", width=1) +
+  coord_polar("y", start=0) +
+  scale_fill_manual(values = cols_habitats2) +
+  theme_void() #Pie chart
+
+
 # Sum of Procrustes variances :  groups #########################
 
 SOV_mean_SR_gp <- morphol.disparity(coords ~ 1, groups= ~ Group, partial = TRUE, 
@@ -1672,538 +2123,6 @@ ggplot(DF_PPV.gp, aes(x="", y=PPV, fill=Gp)) +
   scale_fill_manual(values = cols.SR) +
   theme_void() #Pie chart
 
-##############################################################################################
-############################## PRECISE PALEOENVIRONMENTS #####################################
-##############################################################################################
-
-# we removed species for which no precise information about paleoenvironment is available
-
-##############################################################################################################
-########################################### FULLBODY DISPARITY ############################################
-##############################################################################################################
-
-######################################### Import datasets ################################################
-
-# TPS files with landmarks and semilandmarks
-Sarco_PC <- readland.tps("Postcranial-final.TPS",specID="imageID",negNA = TRUE,readcurves = TRUE,warnmsg = TRUE)
-dim(Sarco_PC)
-dimnames(Sarco_PC)[[3]] 
-Sarco_PC_pal <- Sarco_PC[,,-2][,,-17][,,-23]
-
-name_PC_pal <- dimnames(Sarco_PC_pal)[[3]]
-name_PC_pal
-
-# Excel file with the list of species and their ages
-Period_sarco_PC <- read_excel(file.choose(), 1) #Open List-species-PC.xlsx
-Period_sarco_PC
-
-Period_sarco_PC<- Period_sarco_PC %>%
-  mutate_if(is.character, as.factor)
-
-Period_PC_pal <- Period_sarco_PC %>%  filter(!row_number() %in% c(2,18,25))
-
-# Convert curves into semi-landmarks
-matrice_PC_pal <- rbind(define.sliders(12:41), define.sliders(42:61), define.sliders(62:71), define.sliders(72:107), define.sliders(108:207))
-
-########################################## GPA and PCA ####################################################
-
-# Procrustes superimposition #
-data.super_PC_pal <- gpagen(Sarco_PC_pal, curves = matrice_PC_pal, ProcD = FALSE)
-attributes(data.super_PC_pal)
-
-plot(data.super_PC_pal) 
-
-# Principal component analyses #
-pca_PC_pal <- gm.prcomp(data.super_PC_pal$coords)
-pca_PC_pal
-
-plot_PC_pal <- plot(pca_PC_pal, axis1 = 1, axis2 = 2)
-text(pca_PC_pal[["x"]][,1], pca_PC_pal[["x"]][,2], labels = name_PC_pal) # PCA 1 vs 2
-
-plot_PC2_PC_pal <- plot(pca_PC_pal, axis1=2, axis2=3)
-text(pca_PC_pal[["x"]][,2], pca_PC_pal[["x"]][,3], labels = name_PC_pal) # PCA 2 vs 3
-
-# Saving PC scores #
-
-PC.scores_PC_pal <- pca_PC_pal$x 
-as.data.frame(PC.scores_PC_pal) # Save PC scores as a data frame object
-
-write.csv(PC.scores_PC_pal,"PC.scores_PC_pal.csv",row.names=TRUE) # Save PC scores as a csv file
-
-##################################### Graphical representations ############################################
-
-########### PCA ###########
-
-#PC1 vs PC2 -- color more precise paleoenvironments
-ggplot(as.data.frame(PC.scores_PC_pal), aes(x=PC.scores_PC_pal[,1], y=PC.scores_PC_pal[,2], label = name_PC_pal, fontface = "italic")) +
-  labs(fill="Paleoenvironments") +
-  coord_fixed(ratio = 1) +
-  geom_point(aes(fill = Period_PC_pal$Paleoenvironments), color = "black", size = 4, shape = 21, stroke = 0.10)  +
-  scale_fill_manual(values = cols_habitats2)+
-  lims(x=c(-0.5,0.3), y = c(-0.3,0.2)) +
-  theme_bw() +
-  theme(axis.text.x = element_text(size = 15, color="black", margin = margin(t = 5, r = 0, b = 0, l = 0)),
-        axis.text.y = element_text(size = 15, color="black", margin = margin(t = 0, r = 5, b = 0, l = 0)), 
-        axis.title.x = element_text(size = 15, margin = margin(t = 15, r = 0, b = 0, l = 0)), 
-        axis.title.y = element_text(size = 15, margin = margin(t = 0, r = 15, b = 0, l = 0))) +
-  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), legend.position = "none") +
-  labs(x = "PC1 = 52.32 %", y = "PC2 = 13.19 %" ) 
-
-#PC2 vs PC3 -- color more precise paleoenvironments
-ggplot(as.data.frame(PC.scores_PC_pal), aes(x=PC.scores_PC_pal[,2], y=PC.scores_PC_pal[,3], label = name_PC_pal, fontface = "italic")) +
-  labs(fill="Paleoenvironments") +
-  coord_fixed(ratio = 1) +
-  geom_point(aes(fill = Period_PC_pal$Paleoenvironments), color = "black", size = 6, shape = 21, stroke = 0.10)  +
-  scale_fill_manual(values = cols_habitats2)+
-  lims(x=c(-0.5,0.3), y = c(-0.3,0.2)) +
-  theme_bw() +
-  theme(axis.text.x = element_text(size = 25, color="black", margin = margin(t = 5, r = 0, b = 0, l = 0)),
-        axis.text.y = element_text(size = 25, color="black", margin = margin(t = 0, r = 5, b = 0, l = 0)), 
-        axis.title.x = element_text(size = 29, margin = margin(t = 15, r = 0, b = 0, l = 0)), 
-        axis.title.y = element_text(size = 29, margin = margin(t = 0, r = 15, b = 0, l = 0))) +
-  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), legend.position = "none") +
-  labs(x = "PC2 = 13.19 %", y = "PC3 = 8.84 %" )
-
-
-################### Calculating convex hulls for the PC1 vs PC2 #######################
-
-# Add classifier variables (group, age, habitats) by hand to .csv file
-# loading .csv file with PC scores and classifiers:
-pca.class <- read.csv(file.choose()) #Open PC.scores_PC_pal.csv
-
-# for the more precise paleoenvironments
-CHull_habitat2_PC <- convex.hulls(data = pca.class, name.x = "Comp1", name.y = "Comp2", name.fill = "Habitat2")
-
-CHull_habitat2_PC.table <- CHull_habitat2_PC$table
-CHull_habitat2_PC$surface_area
-
-ggplot(pca.class, aes(x = Comp1,y = Comp2, fill = Habitat2, shape = Habitat2)) +
-  labs(fill="Habitat2") +
-  coord_fixed(ratio = 1) +
-  geom_point(aes(fill = Habitat2), shape = 21, size = 3, stroke = 0.10) + 
-  scale_fill_manual(values = cols_habitats2) +
-  scale_color_manual(values= cols_habitats2)+
-  lims(x=c(-0.5,0.3), y = c(-0.3,0.2)) +
-  theme_bw() +
-  theme(axis.text.x = element_text(size = 15, color="black", margin = margin(t = 5, r = 0, b = 0, l = 0)),
-        axis.text.y = element_text(size = 15, color="black", margin = margin(t = 0, r = 5, b = 0, l = 0)), 
-        axis.title.x = element_text(size = 15, margin = margin(t = 15, r = 0, b = 0, l = 0)), 
-        axis.title.y = element_text(size = 15, margin = margin(t = 0, r = 15, b = 0, l = 0))) +
-  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), legend.position = "none") +
-  labs(x = "PC1 = 52.32 %", y = "PC2 = 13.19 %") +
-  geom_polygon(data = CHull_habitat2_PC.table, aes(x = X, y = Y), alpha = 0.5)
-
-
-################################# Morphological disparity analyses ###########################################
-
-gdf_PC_habitat2 <- geomorph.data.frame(data.super_PC_pal, species = Period_PC_pal$Species, Habitat = Period_PC_pal$Paleoenvironments) #gdf for the more precise paleoenvironments
-
-# Sum of Procrustes variances : More precise aquatic habitats #########################
-
-SOV_mean_PC_pal <- morphol.disparity(coords ~ 1, groups= ~ Habitat, partial = TRUE, 
-                                     data = gdf_PC_habitat2, iter = 999, print.progress = FALSE) #calculate disparity of the time bins and comparing it to the grand mean
-
-summary(SOV_mean_PC_pal)
-
-SOV_PC_pal <- morphol.disparity(coords~Habitat,groups=~Habitat, data = gdf_PC_habitat2, iter = 999) # calculate the disparity within each bin, and compare that to the disparity within other bins. This tells me which time bin is most/least disparate
-
-summary(SOV_PC_pal)
-
-# Graphical representation #
-
-# Contribution of each time bin : Pie chart
-
-PPV_PC.pal <- c("5.184","33.539","13.879","3.355","8.415","16.212","5.170","14.246") # copy the SOV_mean_PC_pal results
-Habitat2 <- c("Alluvial plain", "Bay", "Calm  freshwater lake", "Delta", "Dynamic freshwater lake", "Estuary", "Lagoon", "Oxbow lake/meandering river")
-PPV_PC.pal <- as.numeric(as.character(PPV_PC.pal))
-Habitat2 <- as.factor(as.character(Habitat2))
-
-DF_PPV.pal <- data.frame(Habitats = Habitat2, PPV = PPV_PC.pal)
-DF_PPV.pal # Create data frame Paleoenvironment x Proportion of variance
-
-# Compute percentages
-DF_PPV.pal$fraction = DF_PPV.pal$PPV / sum(DF_PPV.pal$PPV)
-
-# Compute the cumulative percentages (top of each rectangle)
-DF_PPV.pal$ymax = cumsum(DF_PPV.pal$fraction)
-
-# Compute the bottom of each rectangle
-DF_PPV.pal$ymin = c(0, head(DF_PPV.pal$ymax, n=-1))
-
-DF_PPV.pal$labelPosition <- (DF_PPV.pal$ymax + DF_PPV.pal$ymin) / 2
-
-# Compute a good label
-DF_PPV.pal$label <- paste0(DF_PPV.pal$PPV)
-
-# Make the plot
-ggplot(DF_PPV.pal, aes(ymax=ymax, ymin=ymin, xmax=4, xmin=3, fill=Habitat2)) +
-  geom_rect() + 
-  coord_polar(theta="y") +
-  scale_fill_manual(values = cols_habitats2) +
-  xlim(c(2, 4)) +
-  geom_label( x=3.5, aes(y=labelPosition, label=label, size=6)) +
-  theme_void() +
-  theme(legend.position = "none") #donut chart
-
-ggplot(DF_PPV.pal, aes(x="", y=PPV, fill=Habitat2)) +
-  geom_bar(stat="identity", width=1) +
-  coord_polar("y", start=0) +
-  scale_fill_manual(values = cols_habitats2) +
-  theme_void() #Pie chart
-
-
-##############################################################################################################
-############################################## CHEEK DISPARITY ###############################################
-##############################################################################################################
-
-######################################### Import datasets ################################################
-
-Sarco_Cheek <- readland.tps("Cheek-final.TPS",specID="imageID",negNA = TRUE,warnmsg = TRUE)
-dim(Sarco_Cheek)
-
-Sarco_Cheek_pal <- Sarco_Cheek[,,-2][,,-2][,,-2][,,-8][,,-10][,,-20][,,-28][,,-28]
-name_Cheek_pal <- dimnames(Sarco_Cheek_pal)[[3]]
-name_Cheek_pal
-
-Period_sarco_Cheek <- read_excel(file.choose(), 1) # Open List-species-cheek.xlsx
-Period_sarco_Cheek
-
-Period_sarco_Cheek<- Period_sarco_Cheek %>%
-  mutate_if(is.character, as.factor)
-Period_Cheek_pal <- Period_sarco_Cheek %>%  filter(!row_number() %in% c(2,3,4,11,14,25,34,35))
-
-################################ GPA and PCA ##################################
-
-# Procrustes superimposition #
-data.super_Cheek_pal <- gpagen(Sarco_Cheek_pal, ProcD = FALSE)
-attributes(data.super_Cheek_pal)
-
-plot(data.super_Cheek_pal) 
-
-# Principal component analyses #
-pca_Cheek_pal <- gm.prcomp(data.super_Cheek_pal$coords)
-pca_Cheek_pal
-
-plot_Cheek_pal <- plot(pca_Cheek_pal, axis1 = 1, axis2 = 2)
-text(pca_Cheek_pal[["x"]][,1], pca_Cheek_pal[["x"]][,2], labels = name_Cheek_pal) # PCA 1 vs 2
-
-plot_PC2_Cheek_pal <- plot(pca_Cheek_pal, axis1=2, axis2=3)
-text(pca_Cheek_pal[["x"]][,2], pca_Cheek_pal[["x"]][,3], labels = name_Cheek_pal) # PCA 2 vs 3
-
-# Saving PC scores #
-
-PC.scores_Cheek_pal <- pca_Cheek_pal$x 
-as.data.frame(PC.scores_Cheek_pal) # Save PC scores as a data frame object
-
-write.csv(PC.scores_Cheek_pal,"PC.scores_Cheek_pal.csv",row.names=TRUE) # Save PC scores as a csv file
-
-##################################### Graphical representations ############################################
-
-########### PCA ###########
-
-#PC1 vs PC2 -- color more precise paleoenvironments
-ggplot(as.data.frame(PC.scores_Cheek_pal), aes(x=PC.scores_Cheek_pal[,1], y=PC.scores_Cheek_pal[,2], label = name_Cheek_pal, fontface = "italic")) +
-  labs(fill="Paleoenvironments") +
-  coord_fixed(ratio = 1) +
-  geom_point(aes(fill = Period_Cheek_pal$Paleoenvironments), color = "black", size = 4, shape = 21, stroke = 0.10)  +
-  scale_fill_manual(values = cols_habitats2)+
-  lims(x=c(-0.8,0.6), y = c(-0.6,0.5)) +
-  theme_bw() +
-  theme(axis.text.x = element_text(size = 15, color="black", margin = margin(t = 5, r = 0, b = 0, l = 0)),
-        axis.text.y = element_text(size = 15, color="black", margin = margin(t = 0, r = 5, b = 0, l = 0)), 
-        axis.title.x = element_text(size = 15, margin = margin(t = 15, r = 0, b = 0, l = 0)), 
-        axis.title.y = element_text(size = 15, margin = margin(t = 0, r = 15, b = 0, l = 0))) +
-  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), legend.position = "none") +
-  labs(x = "PC1 = 45.11 %", y = "PC2 = 16.04 %" ) 
-
-#PC2 vs PC3 -- color more precise paleoenvironments
-ggplot(as.data.frame(PC.scores_Cheek_pal), aes(x=PC.scores_Cheek_pal[,2], y=PC.scores_Cheek_pal[,3], label = name_Cheek_pal, fontface = "italic")) +
-  labs(fill="Paleoenvironments") +
-  coord_fixed(ratio = 1) +
-  geom_point(aes(fill = Period_Cheek_pal$Paleoenvironments), color = "black", size = 4, shape = 21, stroke = 0.10)  +
-  scale_fill_manual(values = cols_habitats2)+
-  lims(x=c(-0.6,0.5), y = c(-0.3,0.3)) +
-  theme_bw() +
-  theme(axis.text.x = element_text(size = 25, color="black", margin = margin(t = 5, r = 0, b = 0, l = 0)),
-        axis.text.y = element_text(size = 25, color="black", margin = margin(t = 0, r = 5, b = 0, l = 0)), 
-        axis.title.x = element_text(size = 29, margin = margin(t = 15, r = 0, b = 0, l = 0)), 
-        axis.title.y = element_text(size = 29, margin = margin(t = 0, r = 15, b = 0, l = 0))) +
-  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), legend.position = "none") +
-  labs(x = "PC2 = 16.04 %", y = "PC3 = 9.68 %" )
-
-################### Calculating convex hulls for the PC1 vs PC2 #######################
-
-# Add classifier variables (group, age, habitats) by hand to .csv file
-# loading .csv file with PC scores and classifiers:
-pca.class <- read.csv(file.choose()) #Open PC.scores_Cheek_pal.csv
-
-# for the more precise paleoenvironments
-CHull_habitat2_Cheek <- convex.hulls(data = pca.class, name.x = "Comp1", name.y = "Comp2", name.fill = "Habitat2")
-
-CHull_habitat2_Cheek.table <- CHull_habitat2_Cheek$table
-CHull_habitat2_Cheek$surface_area
-
-ggplot(pca.class, aes(x = Comp1,y = Comp2, fill = Habitat2)) +
-  labs(fill="Habitat2") +
-  coord_fixed(ratio = 1) +
-  geom_point(aes(fill = Habitat2), shape = 21, size = 5, stroke = 0.10) + 
-  scale_fill_manual(values = cols_habitats2) +
-  scale_color_manual(values= cols_habitats2)+
-  lims(x=c(-0.7,0.6), y = c(-0.5,0.4)) +
-  theme_bw() +
-  theme(axis.text.x = element_text(size = 15, color="black", margin = margin(t = 5, r = 0, b = 0, l = 0)),
-        axis.text.y = element_text(size = 15, color="black", margin = margin(t = 0, r = 5, b = 0, l = 0)), 
-        axis.title.x = element_text(size = 15, margin = margin(t = 15, r = 0, b = 0, l = 0)), 
-        axis.title.y = element_text(size = 15, margin = margin(t = 0, r = 15, b = 0, l = 0))) +
-  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), legend.position = "none") +
-  labs(x = "PC1 = 45.11 %", y = "PC2 = 16.04 %" ) +
-  geom_polygon(data = CHull_habitat2_Cheek.table, aes(x = X, y = Y), alpha = 0.5)
-
-################################# Morphological disparity analyses ###########################################
-
-gdf_Cheek_habitat2 <- geomorph.data.frame(data.super_Cheek_pal, species = Period_Cheek_pal$Species, Habitat = Period_Cheek_pal$Paleoenvironments) #gdf for the more precise paleoenvironments
-
-# Sum of Procrustes variances : More precise aquatic habitats #########################
-
-SOV_mean_Cheek_pal <- morphol.disparity(coords ~ 1, groups= ~ Habitat, partial = TRUE, 
-                                        data = gdf_Cheek_habitat2, iter = 999, print.progress = FALSE) #calculate disparity of the time bins and comparing it to the grand mean
-
-summary(SOV_mean_Cheek_pal)
-
-SOV_Cheek_pal <- morphol.disparity(coords~Habitat,groups=~Habitat, data = gdf_Cheek_habitat2, iter = 999) # calculate the disparity within each bin, and compare that to the disparity within other bins. This tells which time bin is most/least disparate
-
-summary(SOV_Cheek_pal)
-
-# Graphical representation #
-
-# Contribution of each time bin : Pie chart
-
-PPV_Cheek.pal <- c("7.063","30.340","5.651","1.675","1.141","18.406","21.131","4.925","9.668") # copy the SOV_mean_Cheek_pal results
-Habitat2 <- c("Alluvial plain", "Bay", "Calm  freshwater lake", "Coastal marine","Dynamic freshwater lake", "Estuary", "Lagoon", "Oxbow lake/meandering river", "Reef")
-PPV_Cheek.pal <- as.numeric(as.character(PPV_Cheek.pal))
-Habitat2 <- as.factor(as.character(Habitat2))
-
-DF_PPV.pal <- data.frame(Habitats = Habitat2, PPV = PPV_Cheek.pal)
-DF_PPV.pal # Create data frame Paleoenvironment x Proportion of variance
-
-# Compute percentages
-DF_PPV.pal$fraction = DF_PPV.pal$PPV / sum(DF_PPV.pal$PPV)
-
-# Compute the cumulative percentages (top of each rectangle)
-DF_PPV.pal$ymax = cumsum(DF_PPV.pal$fraction)
-
-# Compute the bottom of each rectangle
-DF_PPV.pal$ymin = c(0, head(DF_PPV.pal$ymax, n=-1))
-
-DF_PPV.pal$labelPosition <- (DF_PPV.pal$ymax + DF_PPV.pal$ymin) / 2
-
-# Compute a good label
-DF_PPV.pal$label <- paste0(DF_PPV.pal$PPV)
-
-# Make the plot
-ggplot(DF_PPV.pal, aes(ymax=ymax, ymin=ymin, xmax=4, xmin=3, fill=Habitat2)) +
-  geom_rect() + 
-  coord_polar(theta="y") +
-  scale_fill_manual(values = cols_habitats2) +
-  xlim(c(2, 4)) +
-  geom_label( x=3.5, aes(y=labelPosition, label=label, size=6)) +
-  theme_void() +
-  theme(legend.position = "none") #donut chart
-
-ggplot(DF_PPV.pal, aes(x="", y=PPV, fill=Habitat2)) +
-  geom_bar(stat="identity", width=1) +
-  coord_polar("y", start=0) +
-  scale_fill_manual(values = cols_habitats2) +
-  theme_void() #Pie chart
-
-##############################################################################################################
-############################################## SKULL ROOF DISPARITY ##########################################
-##############################################################################################################
-
-######################################### Import datasets ################################################
-
-Sarco_SR <- readland.tps("Skullroof-final.TPS",specID="imageID",negNA = TRUE,warnmsg = TRUE)
-dim(Sarco_SR)
-
-Sarco_SR_pal <- Sarco_SR[,,-6][,,-6][,,-6][,,-13][,,-24][,,-27][,,-37]
-names_SR_pal <- dimnames(Sarco_SR_pal)[[3]]
-names_SR_pal
-
-Period_sarco_SR <- read_excel(file.choose(), 1) # Open List-species-SR.xlsx
-Period_sarco_SR
-
-Period_sarco_SR<- Period_sarco_SR %>%
-  mutate_if(is.character, as.factor)
-Period_SR_pal <- Period_sarco_SR %>% filter(!row_number() %in% c(6,7,8,16,28,32,43))
-
-################################### GPA and PCA ##################################
-
-# Procrustes superimposition #
-
-data.super_SR_pal <- gpagen(Sarco_SR_pal, ProcD = FALSE)
-attributes(data.super_SR_pal)
-
-plot(data.super_SR_pal) 
-
-# Asymmetry #
-
-nbb <- as.character(c(1:47))
-data.super_SR_pal$ind=nbb # adding an ind vector to gpagen
-
-n_pairs <- c(1,2,3,4,5,6,7,8,9,10,11,12,14,16,15,17,18,21,19,22,20,23)
-pairs_matrix <- matrix(n_pairs, ncol=2, byrow = TRUE) # match paired landmarks
-pairs_matrix
-
-
-sym_pal <- bilat.symmetry(A = data.super_SR_pal$coords, ind=names_SR_pal, object.sym = TRUE, land.pairs = pairs_matrix, iter = 149)
-summary(sym_pal)
-
-plot(sym_pal$symm.shape[,c(1,2),8])
-
-ppca_pal<-gm.prcomp(sym_pal$symm.shape)
-mmshape_pal<-mshape(sym_pal$symm.shape)
-
-sym_pal$symm.shape
-
-
-# Principal component analyses #
-
-pca_sym.SR_pal <- gm.prcomp(sym_pal$symm.shape) #with symmetrized coordinates
-pca_sym.SR_pal
-plot_sym_pal <- plot(pca_sym.SR_pal)
-
-plot_SR_pal <- plot(pca_sym.SR_pal, axis1 = 1, axis2 = 2)
-text(pca_sym.SR_pal[["x"]][,1], pca_sym.SR_pal[["x"]][,2], labels = names_SR_pal) # PCA 1 vs 2
-
-plot_PC2_SR_pal <- plot(pca_sym.SR_pal, axis1=2, axis2=3)
-text(pca_sym.SR_pal[["x"]][,2], pca_sym.SR_pal[["x"]][,3], labels = names_SR_pal) # PCA 2 vs 3
-
-# Saving PC scores #
-
-PC.scores_SR_pal <- pca_sym.SR_pal$x 
-as.data.frame(PC.scores_SR_pal) # Save PC scores as a data frame object
-
-write.csv(PC.scores_SR_pal,"PC.scores_SR_pal.csv",row.names=TRUE) # Save PC scores as a csv file
-
-##################################### Graphical representations ############################################
-
-########### PCA ###########
-
-#PC1 vs PC2 -- color more precise paleoenvironments
-ggplot(as.data.frame(PC.scores_SR_pal), aes(x=PC.scores_SR_pal[,1], y=PC.scores_SR_pal[,2], label = names_SR_pal, fontface = "italic")) +
-  labs(fill="Paleoenvironments") +
-  coord_fixed(ratio = 1) +
-  geom_point(aes(fill = Period_SR_pal$Paleoenvironments), color = "black", size = 4, shape = 21, stroke = 0.10)  +
-  scale_fill_manual(values = cols_habitats2)+
-  lims(x=c(-0.4,0.4), y = c(-0.3,0.3))+
-  theme_bw() +
-  theme(axis.text.x = element_text(size = 15, color="black", margin = margin(t = 5, r = 0, b = 0, l = 0)),
-        axis.text.y = element_text(size = 15, color="black", margin = margin(t = 0, r = 5, b = 0, l = 0)), 
-        axis.title.x = element_text(size = 15, margin = margin(t = 15, r = 0, b = 0, l = 0)), 
-        axis.title.y = element_text(size = 15, margin = margin(t = 0, r = 15, b = 0, l = 0))) +
-  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), legend.position = "none") +
-  labs(x = "PC1 = 49.95 %", y = "PC2 = 18.58 %" )  
-
-#PC2 vs PC3 -- color more precise paleoenvironments
-ggplot(as.data.frame(PC.scores_SR_pal), aes(x=PC.scores_SR_pal[,2], y=PC.scores_SR_pal[,3], label = names_SR_pal, fontface = "italic")) +
-  labs(fill="Paleoenvironments") +
-  coord_fixed(ratio = 1) +
-  geom_point(aes(fill = Period_SR_pal$Paleoenvironments), color = "black", size = 4, shape = 21, stroke = 0.10)  +
-  scale_fill_manual(values = cols_habitats2)+
-  lims(x=c(-0.3,0.3), y = c(-0.3,0.3)) +
-  theme_bw() +
-  theme(axis.text.x = element_text(size = 25, color="black", margin = margin(t = 5, r = 0, b = 0, l = 0)),
-        axis.text.y = element_text(size = 25, color="black", margin = margin(t = 0, r = 5, b = 0, l = 0)), 
-        axis.title.x = element_text(size = 29, margin = margin(t = 15, r = 0, b = 0, l = 0)), 
-        axis.title.y = element_text(size = 29, margin = margin(t = 0, r = 15, b = 0, l = 0))) +
-  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), legend.position = "none") +
-  labs(x = "PC2 = 18.58 %", y = "PC3 = 11.67 %" )
-
-################### Calculating convex hulls for the PC1 vs PC2 #######################
-
-# Add classifier variables (group, age, habitats) by hand to .csv file
-# loading .csv file with PC scores and classifiers:
-pca.class <- read.csv(file.choose()) #Open PC.scores_SR_pal.csv
-
-# for the more precise paleoenvironments
-CHull_habitat2_SR <- convex.hulls(data = pca.class, name.x = "Comp1", name.y = "Comp2", name.fill = "Habitat2")
-
-CHull_habitat2_SR.table <- CHull_habitat2_SR$table
-CHull_habitat2_SR$surface_area
-
-ggplot(pca.class, aes(x = Comp1,y = Comp2, fill = Habitat2)) +
-  labs(fill="Habitat2") +
-  coord_fixed(ratio = 1) +
-  geom_point(aes(fill = Habitat2), shape = 21, size = 5, stroke = 0.10) + 
-  scale_fill_manual(values = cols_habitats2) +
-  scale_color_manual(values= cols_habitats2)+
-  lims(x=c(-0.7,0.7), y = c(-0.45,0.35))+
-  theme_bw() +
-  theme(axis.text.x = element_text(size = 15, color="black", margin = margin(t = 5, r = 0, b = 0, l = 0)),
-        axis.text.y = element_text(size = 15, color="black", margin = margin(t = 0, r = 5, b = 0, l = 0)), 
-        axis.title.x = element_text(size = 15, margin = margin(t = 15, r = 0, b = 0, l = 0)), 
-        axis.title.y = element_text(size = 15, margin = margin(t = 0, r = 15, b = 0, l = 0))) +
-  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), legend.position = "none") +
-  labs(x = "PC1 = 49.95 %", y = "PC2 = 18.58 %" ) +
-  geom_polygon(data = CHull_habitat2_SR.table, aes(x = X, y = Y), alpha = 0.5)
-
-################################# Morphological disparity analyses ###########################################
-
-gdf_SR_habitat2 <- geomorph.data.frame(sym_pal$symm.shape, species = Period_SR_pal$Species, Habitat = Period_SR_pal$Paleoenvironments) #gdf for the more precise paleoenvironments
-names(gdf_SR_habitat2)<-c("coords", "species", "Habitat")
-
-# Sum of Procrustes variances : More precise aquatic habitats #########################
-
-SOV_mean_SR_pal <- morphol.disparity(coords ~ 1, groups= ~ Habitat, partial = TRUE, 
-                                     data = gdf_SR_habitat2, iter = 999, print.progress = FALSE) #calculate disparity of the time bins and comparing it to the grand mean
-
-summary(SOV_mean_SR_pal)
-
-SOV_SR_pal <- morphol.disparity(coords~Habitat,groups=~Habitat, data = gdf_SR_habitat2, iter = 999) # calculate the disparity within each bin, and compare that to the disparity within other bins. This tells which time bin is most/least disparate
-
-summary(SOV_SR_pal)
-
-# Graphical representation #
-
-# Contribution of each time bin : Pie chart
-
-PPV_SR.pal <- c("5.861", "7.774", "19.761", "2.107", "18.222", "18.067", "12.270", "15.938") # copy the SOV_mean_SR_pal results
-Habitat2 <- c("Alluvial plain", "Bay", "Calm  freshwater lake", "Coastal marine", "Estuary", "Lagoon", "Oxbow lake/meandering river", "Reef")
-PPV_SR.pal <- as.numeric(as.character(PPV_SR.pal))
-Habitat2 <- as.factor(as.character(Habitat2))
-
-DF_PPV.pal <- data.frame(Habitats = Habitat2, PPV = PPV_SR.pal)
-DF_PPV.pal # Create data frame Paleoenvironment x Proportion of variance
-
-# Compute percentages
-DF_PPV.pal$fraction = DF_PPV.pal$PPV / sum(DF_PPV.pal$PPV)
-
-# Compute the cumulative percentages (top of each rectangle)
-DF_PPV.pal$ymax = cumsum(DF_PPV.pal$fraction)
-
-# Compute the bottom of each rectangle
-DF_PPV.pal$ymin = c(0, head(DF_PPV.pal$ymax, n=-1))
-
-DF_PPV.pal$labelPosition <- (DF_PPV.pal$ymax + DF_PPV.pal$ymin) / 2
-
-# Compute a good label
-DF_PPV.pal$label <- paste0(DF_PPV.pal$PPV)
-
-# Make the plot
-ggplot(DF_PPV.pal, aes(ymax=ymax, ymin=ymin, xmax=4, xmin=3, fill=Habitat2)) +
-  geom_rect() + 
-  coord_polar(theta="y") +
-  scale_fill_manual(values = cols_habitats2) +
-  xlim(c(2, 4)) +
-  geom_label( x=3.5, aes(y=labelPosition, label=label, size=6)) +
-  theme_void() +
-  theme(legend.position = "none") #donut chart
-
-ggplot(DF_PPV.pal, aes(x="", y=PPV, fill=Habitat2)) +
-  geom_bar(stat="identity", width=1) +
-  coord_polar("y", start=0) +
-  scale_fill_manual(values = cols_habitats2) +
-  theme_void() #Pie chart
 
 ################################################################################
 ########################## Figure SOV through ages #############################
@@ -3335,3 +3254,763 @@ lines(stages_upd$mid[17:29], SOV_sAlle$SOV_Cheek, col="red", lwd = 4)
 points(stages_upd$mid[17:29], SOV_sAlle$SOV_Cheek, col="red", pch = 16, cex= 2)
 lines(stages_upd$mid[17:29], SOV_sAlle$SOV_SR, col="#03be36", lwd = 4)
 points(stages_upd$mid[17:29], SOV_sAlle$SOV_SR, col="#03be36", pch = 17, cex = 2)
+
+##############################################################################################
+############################## PRECISE PALEOENVIRONMENTS #####################################
+##############################################################################################
+
+# we removed species for which no precise information about paleoenvironment is available
+
+##############################################################################################################
+########################################### FULLBODY DISPARITY ############################################
+##############################################################################################################
+
+######################################### Import datasets ################################################
+
+# TPS files with landmarks and semilandmarks
+Sarco_PC <- readland.tps("Postcranial-final.TPS",specID="imageID",negNA = TRUE,readcurves = TRUE,warnmsg = TRUE)
+dim(Sarco_PC)
+dimnames(Sarco_PC)[[3]] 
+Sarco_PC_pal <- Sarco_PC[,,-2][,,-17][,,-23]
+
+name_PC_pal <- dimnames(Sarco_PC_pal)[[3]]
+name_PC_pal
+
+# Excel file with the list of species and their ages
+Period_sarco_PC <- read_excel(file.choose(), 1) #Open List-species-PC.xlsx
+Period_sarco_PC
+
+Period_sarco_PC<- Period_sarco_PC %>%
+  mutate_if(is.character, as.factor)
+
+Period_PC_pal <- Period_sarco_PC %>%  filter(!row_number() %in% c(2,18,25))
+
+# Convert curves into semi-landmarks
+matrice_PC_pal <- rbind(define.sliders(12:41), define.sliders(42:61), define.sliders(62:71), define.sliders(72:107), define.sliders(108:207))
+
+########################################## GPA and PCA ####################################################
+
+# Procrustes superimposition #
+data.super_PC_pal <- gpagen(Sarco_PC_pal, curves = matrice_PC_pal, ProcD = FALSE)
+attributes(data.super_PC_pal)
+
+plot(data.super_PC_pal) 
+
+# Principal component analyses #
+pca_PC_pal <- gm.prcomp(data.super_PC_pal$coords)
+pca_PC_pal
+
+plot_PC_pal <- plot(pca_PC_pal, axis1 = 1, axis2 = 2)
+text(pca_PC_pal[["x"]][,1], pca_PC_pal[["x"]][,2], labels = name_PC_pal) # PCA 1 vs 2
+
+plot_PC2_PC_pal <- plot(pca_PC_pal, axis1=2, axis2=3)
+text(pca_PC_pal[["x"]][,2], pca_PC_pal[["x"]][,3], labels = name_PC_pal) # PCA 2 vs 3
+
+# Saving PC scores #
+
+PC.scores_PC_pal <- pca_PC_pal$x 
+as.data.frame(PC.scores_PC_pal) # Save PC scores as a data frame object
+
+write.csv(PC.scores_PC_pal,"PC.scores_PC_pal.csv",row.names=TRUE) # Save PC scores as a csv file
+
+##################################### Graphical representations ############################################
+
+########### PCA ###########
+
+#PC1 vs PC2 -- color more precise paleoenvironments
+ggplot(as.data.frame(PC.scores_PC_pal), aes(x=PC.scores_PC_pal[,1], y=PC.scores_PC_pal[,2], label = name_PC_pal, fontface = "italic")) +
+  labs(fill="Paleoenvironments") +
+  coord_fixed(ratio = 1) +
+  geom_point(aes(fill = Period_PC_pal$Paleoenvironments), color = "black", size = 4, shape = 21, stroke = 0.10)  +
+  scale_fill_manual(values = cols_habitats2)+
+  lims(x=c(-0.5,0.3), y = c(-0.3,0.2)) +
+  theme_bw() +
+  theme(axis.text.x = element_text(size = 15, color="black", margin = margin(t = 5, r = 0, b = 0, l = 0)),
+        axis.text.y = element_text(size = 15, color="black", margin = margin(t = 0, r = 5, b = 0, l = 0)), 
+        axis.title.x = element_text(size = 15, margin = margin(t = 15, r = 0, b = 0, l = 0)), 
+        axis.title.y = element_text(size = 15, margin = margin(t = 0, r = 15, b = 0, l = 0))) +
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), legend.position = "none") +
+  labs(x = "PC1 = 52.32 %", y = "PC2 = 13.19 %" ) 
+
+#PC2 vs PC3 -- color more precise paleoenvironments
+ggplot(as.data.frame(PC.scores_PC_pal), aes(x=PC.scores_PC_pal[,2], y=PC.scores_PC_pal[,3], label = name_PC_pal, fontface = "italic")) +
+  labs(fill="Paleoenvironments") +
+  coord_fixed(ratio = 1) +
+  geom_point(aes(fill = Period_PC_pal$Paleoenvironments), color = "black", size = 6, shape = 21, stroke = 0.10)  +
+  scale_fill_manual(values = cols_habitats2)+
+  lims(x=c(-0.5,0.3), y = c(-0.3,0.2)) +
+  theme_bw() +
+  theme(axis.text.x = element_text(size = 25, color="black", margin = margin(t = 5, r = 0, b = 0, l = 0)),
+        axis.text.y = element_text(size = 25, color="black", margin = margin(t = 0, r = 5, b = 0, l = 0)), 
+        axis.title.x = element_text(size = 29, margin = margin(t = 15, r = 0, b = 0, l = 0)), 
+        axis.title.y = element_text(size = 29, margin = margin(t = 0, r = 15, b = 0, l = 0))) +
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), legend.position = "none") +
+  labs(x = "PC2 = 13.19 %", y = "PC3 = 8.84 %" )
+
+
+################### Calculating convex hulls for the PC1 vs PC2 #######################
+
+# Add classifier variables (group, age, habitats) by hand to .csv file
+# loading .csv file with PC scores and classifiers:
+pca.class <- read.csv(file.choose()) #Open PC.scores_PC_pal.csv
+
+# for the more precise paleoenvironments
+CHull_habitat2_PC <- convex.hulls(data = pca.class, name.x = "Comp1", name.y = "Comp2", name.fill = "Habitat2")
+
+CHull_habitat2_PC.table <- CHull_habitat2_PC$table
+CHull_habitat2_PC$surface_area
+
+ggplot(pca.class, aes(x = Comp1,y = Comp2, fill = Habitat2, shape = Habitat2)) +
+  labs(fill="Habitat2") +
+  coord_fixed(ratio = 1) +
+  geom_point(aes(fill = Habitat2), shape = 21, size = 3, stroke = 0.10) + 
+  scale_fill_manual(values = cols_habitats2) +
+  scale_color_manual(values= cols_habitats2)+
+  lims(x=c(-0.5,0.3), y = c(-0.3,0.2)) +
+  theme_bw() +
+  theme(axis.text.x = element_text(size = 15, color="black", margin = margin(t = 5, r = 0, b = 0, l = 0)),
+        axis.text.y = element_text(size = 15, color="black", margin = margin(t = 0, r = 5, b = 0, l = 0)), 
+        axis.title.x = element_text(size = 15, margin = margin(t = 15, r = 0, b = 0, l = 0)), 
+        axis.title.y = element_text(size = 15, margin = margin(t = 0, r = 15, b = 0, l = 0))) +
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), legend.position = "none") +
+  labs(x = "PC1 = 52.32 %", y = "PC2 = 13.19 %") +
+  geom_polygon(data = CHull_habitat2_PC.table, aes(x = X, y = Y), alpha = 0.5)
+
+
+################################# Morphological disparity analyses ###########################################
+
+gdf_PC_habitat2 <- geomorph.data.frame(data.super_PC_pal, species = Period_PC_pal$Species, Habitat = Period_PC_pal$Paleoenvironments) #gdf for the more precise paleoenvironments
+
+# Sum of Procrustes variances : More precise aquatic habitats #########################
+
+SOV_mean_PC_pal <- morphol.disparity(coords ~ 1, groups= ~ Habitat, partial = TRUE, 
+                                     data = gdf_PC_habitat2, iter = 999, print.progress = FALSE) #calculate disparity of the time bins and comparing it to the grand mean
+
+summary(SOV_mean_PC_pal)
+
+SOV_PC_pal <- morphol.disparity(coords~Habitat,groups=~Habitat, data = gdf_PC_habitat2, iter = 999) # calculate the disparity within each bin, and compare that to the disparity within other bins. This tells me which time bin is most/least disparate
+
+summary(SOV_PC_pal)
+
+# Graphical representation #
+
+# Contribution of each time bin : Pie chart
+
+PPV_PC.pal <- c("5.184","33.539","13.879","3.355","8.415","16.212","5.170","14.246") # copy the SOV_mean_PC_pal results
+Habitat2 <- c("Alluvial plain", "Bay", "Calm  freshwater lake", "Delta", "Dynamic freshwater lake", "Estuary", "Lagoon", "Oxbow lake/meandering river")
+PPV_PC.pal <- as.numeric(as.character(PPV_PC.pal))
+Habitat2 <- as.factor(as.character(Habitat2))
+
+DF_PPV.pal <- data.frame(Habitats = Habitat2, PPV = PPV_PC.pal)
+DF_PPV.pal # Create data frame Paleoenvironment x Proportion of variance
+
+# Compute percentages
+DF_PPV.pal$fraction = DF_PPV.pal$PPV / sum(DF_PPV.pal$PPV)
+
+# Compute the cumulative percentages (top of each rectangle)
+DF_PPV.pal$ymax = cumsum(DF_PPV.pal$fraction)
+
+# Compute the bottom of each rectangle
+DF_PPV.pal$ymin = c(0, head(DF_PPV.pal$ymax, n=-1))
+
+DF_PPV.pal$labelPosition <- (DF_PPV.pal$ymax + DF_PPV.pal$ymin) / 2
+
+# Compute a good label
+DF_PPV.pal$label <- paste0(DF_PPV.pal$PPV)
+
+# Make the plot
+ggplot(DF_PPV.pal, aes(ymax=ymax, ymin=ymin, xmax=4, xmin=3, fill=Habitat2)) +
+  geom_rect() + 
+  coord_polar(theta="y") +
+  scale_fill_manual(values = cols_habitats2) +
+  xlim(c(2, 4)) +
+  geom_label( x=3.5, aes(y=labelPosition, label=label, size=6)) +
+  theme_void() +
+  theme(legend.position = "none") #donut chart
+
+ggplot(DF_PPV.pal, aes(x="", y=PPV, fill=Habitat2)) +
+  geom_bar(stat="identity", width=1) +
+  coord_polar("y", start=0) +
+  scale_fill_manual(values = cols_habitats2) +
+  theme_void() #Pie chart
+
+
+##############################################################################################################
+############################################## CHEEK DISPARITY ###############################################
+##############################################################################################################
+
+######################################### Import datasets ################################################
+
+Sarco_Cheek <- readland.tps("Cheek-final.TPS",specID="imageID",negNA = TRUE,warnmsg = TRUE)
+dim(Sarco_Cheek)
+
+Sarco_Cheek_pal <- Sarco_Cheek[,,-2][,,-2][,,-2][,,-8][,,-10][,,-20][,,-28][,,-28]
+name_Cheek_pal <- dimnames(Sarco_Cheek_pal)[[3]]
+name_Cheek_pal
+
+Period_sarco_Cheek <- read_excel(file.choose(), 1) # Open List-species-cheek.xlsx
+Period_sarco_Cheek
+
+Period_sarco_Cheek<- Period_sarco_Cheek %>%
+  mutate_if(is.character, as.factor)
+Period_Cheek_pal <- Period_sarco_Cheek %>%  filter(!row_number() %in% c(2,3,4,11,14,25,34,35))
+
+################################ GPA and PCA ##################################
+
+# Procrustes superimposition #
+data.super_Cheek_pal <- gpagen(Sarco_Cheek_pal, ProcD = FALSE)
+attributes(data.super_Cheek_pal)
+
+plot(data.super_Cheek_pal) 
+
+# Principal component analyses #
+pca_Cheek_pal <- gm.prcomp(data.super_Cheek_pal$coords)
+pca_Cheek_pal
+
+plot_Cheek_pal <- plot(pca_Cheek_pal, axis1 = 1, axis2 = 2)
+text(pca_Cheek_pal[["x"]][,1], pca_Cheek_pal[["x"]][,2], labels = name_Cheek_pal) # PCA 1 vs 2
+
+plot_PC2_Cheek_pal <- plot(pca_Cheek_pal, axis1=2, axis2=3)
+text(pca_Cheek_pal[["x"]][,2], pca_Cheek_pal[["x"]][,3], labels = name_Cheek_pal) # PCA 2 vs 3
+
+# Saving PC scores #
+
+PC.scores_Cheek_pal <- pca_Cheek_pal$x 
+as.data.frame(PC.scores_Cheek_pal) # Save PC scores as a data frame object
+
+write.csv(PC.scores_Cheek_pal,"PC.scores_Cheek_pal.csv",row.names=TRUE) # Save PC scores as a csv file
+
+##################################### Graphical representations ############################################
+
+########### PCA ###########
+
+#PC1 vs PC2 -- color more precise paleoenvironments
+ggplot(as.data.frame(PC.scores_Cheek_pal), aes(x=PC.scores_Cheek_pal[,1], y=PC.scores_Cheek_pal[,2], label = name_Cheek_pal, fontface = "italic")) +
+  labs(fill="Paleoenvironments") +
+  coord_fixed(ratio = 1) +
+  geom_point(aes(fill = Period_Cheek_pal$Paleoenvironments), color = "black", size = 4, shape = 21, stroke = 0.10)  +
+  scale_fill_manual(values = cols_habitats2)+
+  lims(x=c(-0.8,0.6), y = c(-0.6,0.5)) +
+  theme_bw() +
+  theme(axis.text.x = element_text(size = 15, color="black", margin = margin(t = 5, r = 0, b = 0, l = 0)),
+        axis.text.y = element_text(size = 15, color="black", margin = margin(t = 0, r = 5, b = 0, l = 0)), 
+        axis.title.x = element_text(size = 15, margin = margin(t = 15, r = 0, b = 0, l = 0)), 
+        axis.title.y = element_text(size = 15, margin = margin(t = 0, r = 15, b = 0, l = 0))) +
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), legend.position = "none") +
+  labs(x = "PC1 = 45.11 %", y = "PC2 = 16.04 %" ) 
+
+#PC2 vs PC3 -- color more precise paleoenvironments
+ggplot(as.data.frame(PC.scores_Cheek_pal), aes(x=PC.scores_Cheek_pal[,2], y=PC.scores_Cheek_pal[,3], label = name_Cheek_pal, fontface = "italic")) +
+  labs(fill="Paleoenvironments") +
+  coord_fixed(ratio = 1) +
+  geom_point(aes(fill = Period_Cheek_pal$Paleoenvironments), color = "black", size = 4, shape = 21, stroke = 0.10)  +
+  scale_fill_manual(values = cols_habitats2)+
+  lims(x=c(-0.6,0.5), y = c(-0.3,0.3)) +
+  theme_bw() +
+  theme(axis.text.x = element_text(size = 25, color="black", margin = margin(t = 5, r = 0, b = 0, l = 0)),
+        axis.text.y = element_text(size = 25, color="black", margin = margin(t = 0, r = 5, b = 0, l = 0)), 
+        axis.title.x = element_text(size = 29, margin = margin(t = 15, r = 0, b = 0, l = 0)), 
+        axis.title.y = element_text(size = 29, margin = margin(t = 0, r = 15, b = 0, l = 0))) +
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), legend.position = "none") +
+  labs(x = "PC2 = 16.04 %", y = "PC3 = 9.68 %" )
+
+################### Calculating convex hulls for the PC1 vs PC2 #######################
+
+# Add classifier variables (group, age, habitats) by hand to .csv file
+# loading .csv file with PC scores and classifiers:
+pca.class <- read.csv(file.choose()) #Open PC.scores_Cheek_pal.csv
+
+# for the more precise paleoenvironments
+CHull_habitat2_Cheek <- convex.hulls(data = pca.class, name.x = "Comp1", name.y = "Comp2", name.fill = "Habitat2")
+
+CHull_habitat2_Cheek.table <- CHull_habitat2_Cheek$table
+CHull_habitat2_Cheek$surface_area
+
+ggplot(pca.class, aes(x = Comp1,y = Comp2, fill = Habitat2)) +
+  labs(fill="Habitat2") +
+  coord_fixed(ratio = 1) +
+  geom_point(aes(fill = Habitat2), shape = 21, size = 5, stroke = 0.10) + 
+  scale_fill_manual(values = cols_habitats2) +
+  scale_color_manual(values= cols_habitats2)+
+  lims(x=c(-0.7,0.6), y = c(-0.5,0.4)) +
+  theme_bw() +
+  theme(axis.text.x = element_text(size = 15, color="black", margin = margin(t = 5, r = 0, b = 0, l = 0)),
+        axis.text.y = element_text(size = 15, color="black", margin = margin(t = 0, r = 5, b = 0, l = 0)), 
+        axis.title.x = element_text(size = 15, margin = margin(t = 15, r = 0, b = 0, l = 0)), 
+        axis.title.y = element_text(size = 15, margin = margin(t = 0, r = 15, b = 0, l = 0))) +
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), legend.position = "none") +
+  labs(x = "PC1 = 45.11 %", y = "PC2 = 16.04 %" ) +
+  geom_polygon(data = CHull_habitat2_Cheek.table, aes(x = X, y = Y), alpha = 0.5)
+
+################################# Morphological disparity analyses ###########################################
+
+gdf_Cheek_habitat2 <- geomorph.data.frame(data.super_Cheek_pal, species = Period_Cheek_pal$Species, Habitat = Period_Cheek_pal$Paleoenvironments) #gdf for the more precise paleoenvironments
+
+# Sum of Procrustes variances : More precise aquatic habitats #########################
+
+SOV_mean_Cheek_pal <- morphol.disparity(coords ~ 1, groups= ~ Habitat, partial = TRUE, 
+                                        data = gdf_Cheek_habitat2, iter = 999, print.progress = FALSE) #calculate disparity of the time bins and comparing it to the grand mean
+
+summary(SOV_mean_Cheek_pal)
+
+SOV_Cheek_pal <- morphol.disparity(coords~Habitat,groups=~Habitat, data = gdf_Cheek_habitat2, iter = 999) # calculate the disparity within each bin, and compare that to the disparity within other bins. This tells which time bin is most/least disparate
+
+summary(SOV_Cheek_pal)
+
+# Graphical representation #
+
+# Contribution of each time bin : Pie chart
+
+PPV_Cheek.pal <- c("7.063","30.340","5.651","1.675","1.141","18.406","21.131","4.925","9.668") # copy the SOV_mean_Cheek_pal results
+Habitat2 <- c("Alluvial plain", "Bay", "Calm  freshwater lake", "Coastal marine","Dynamic freshwater lake", "Estuary", "Lagoon", "Oxbow lake/meandering river", "Reef")
+PPV_Cheek.pal <- as.numeric(as.character(PPV_Cheek.pal))
+Habitat2 <- as.factor(as.character(Habitat2))
+
+DF_PPV.pal <- data.frame(Habitats = Habitat2, PPV = PPV_Cheek.pal)
+DF_PPV.pal # Create data frame Paleoenvironment x Proportion of variance
+
+# Compute percentages
+DF_PPV.pal$fraction = DF_PPV.pal$PPV / sum(DF_PPV.pal$PPV)
+
+# Compute the cumulative percentages (top of each rectangle)
+DF_PPV.pal$ymax = cumsum(DF_PPV.pal$fraction)
+
+# Compute the bottom of each rectangle
+DF_PPV.pal$ymin = c(0, head(DF_PPV.pal$ymax, n=-1))
+
+DF_PPV.pal$labelPosition <- (DF_PPV.pal$ymax + DF_PPV.pal$ymin) / 2
+
+# Compute a good label
+DF_PPV.pal$label <- paste0(DF_PPV.pal$PPV)
+
+# Make the plot
+ggplot(DF_PPV.pal, aes(ymax=ymax, ymin=ymin, xmax=4, xmin=3, fill=Habitat2)) +
+  geom_rect() + 
+  coord_polar(theta="y") +
+  scale_fill_manual(values = cols_habitats2) +
+  xlim(c(2, 4)) +
+  geom_label( x=3.5, aes(y=labelPosition, label=label, size=6)) +
+  theme_void() +
+  theme(legend.position = "none") #donut chart
+
+ggplot(DF_PPV.pal, aes(x="", y=PPV, fill=Habitat2)) +
+  geom_bar(stat="identity", width=1) +
+  coord_polar("y", start=0) +
+  scale_fill_manual(values = cols_habitats2) +
+  theme_void() #Pie chart
+
+##############################################################################################################
+############################################## SKULL ROOF DISPARITY ##########################################
+##############################################################################################################
+
+######################################### Import datasets ################################################
+
+Sarco_SR <- readland.tps("Skullroof-final.TPS",specID="imageID",negNA = TRUE,warnmsg = TRUE)
+dim(Sarco_SR)
+
+Sarco_SR_pal <- Sarco_SR[,,-6][,,-6][,,-6][,,-13][,,-24][,,-27][,,-37]
+names_SR_pal <- dimnames(Sarco_SR_pal)[[3]]
+names_SR_pal
+
+Period_sarco_SR <- read_excel(file.choose(), 1) # Open List-species-SR.xlsx
+Period_sarco_SR
+
+Period_sarco_SR<- Period_sarco_SR %>%
+  mutate_if(is.character, as.factor)
+Period_SR_pal <- Period_sarco_SR %>% filter(!row_number() %in% c(6,7,8,16,28,32,43))
+
+################################### GPA and PCA ##################################
+
+# Procrustes superimposition #
+
+data.super_SR_pal <- gpagen(Sarco_SR_pal, ProcD = FALSE)
+attributes(data.super_SR_pal)
+
+plot(data.super_SR_pal) 
+
+# Asymmetry #
+
+nbb <- as.character(c(1:47))
+data.super_SR_pal$ind=nbb # adding an ind vector to gpagen
+
+n_pairs <- c(1,2,3,4,5,6,7,8,9,10,11,12,14,16,15,17,18,21,19,22,20,23)
+pairs_matrix <- matrix(n_pairs, ncol=2, byrow = TRUE) # match paired landmarks
+pairs_matrix
+
+
+sym_pal <- bilat.symmetry(A = data.super_SR_pal$coords, ind=names_SR_pal, object.sym = TRUE, land.pairs = pairs_matrix, iter = 149)
+summary(sym_pal)
+
+plot(sym_pal$symm.shape[,c(1,2),8])
+
+ppca_pal<-gm.prcomp(sym_pal$symm.shape)
+mmshape_pal<-mshape(sym_pal$symm.shape)
+
+sym_pal$symm.shape
+
+
+# Principal component analyses #
+
+pca_sym.SR_pal <- gm.prcomp(sym_pal$symm.shape) #with symmetrized coordinates
+pca_sym.SR_pal
+plot_sym_pal <- plot(pca_sym.SR_pal)
+
+plot_SR_pal <- plot(pca_sym.SR_pal, axis1 = 1, axis2 = 2)
+text(pca_sym.SR_pal[["x"]][,1], pca_sym.SR_pal[["x"]][,2], labels = names_SR_pal) # PCA 1 vs 2
+
+plot_PC2_SR_pal <- plot(pca_sym.SR_pal, axis1=2, axis2=3)
+text(pca_sym.SR_pal[["x"]][,2], pca_sym.SR_pal[["x"]][,3], labels = names_SR_pal) # PCA 2 vs 3
+
+# Saving PC scores #
+
+PC.scores_SR_pal <- pca_sym.SR_pal$x 
+as.data.frame(PC.scores_SR_pal) # Save PC scores as a data frame object
+
+write.csv(PC.scores_SR_pal,"PC.scores_SR_pal.csv",row.names=TRUE) # Save PC scores as a csv file
+
+##################################### Graphical representations ############################################
+
+########### PCA ###########
+
+#PC1 vs PC2 -- color more precise paleoenvironments
+ggplot(as.data.frame(PC.scores_SR_pal), aes(x=PC.scores_SR_pal[,1], y=PC.scores_SR_pal[,2], label = names_SR_pal, fontface = "italic")) +
+  labs(fill="Paleoenvironments") +
+  coord_fixed(ratio = 1) +
+  geom_point(aes(fill = Period_SR_pal$Paleoenvironments), color = "black", size = 4, shape = 21, stroke = 0.10)  +
+  scale_fill_manual(values = cols_habitats2)+
+  lims(x=c(-0.4,0.4), y = c(-0.3,0.3))+
+  theme_bw() +
+  theme(axis.text.x = element_text(size = 15, color="black", margin = margin(t = 5, r = 0, b = 0, l = 0)),
+        axis.text.y = element_text(size = 15, color="black", margin = margin(t = 0, r = 5, b = 0, l = 0)), 
+        axis.title.x = element_text(size = 15, margin = margin(t = 15, r = 0, b = 0, l = 0)), 
+        axis.title.y = element_text(size = 15, margin = margin(t = 0, r = 15, b = 0, l = 0))) +
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), legend.position = "none") +
+  labs(x = "PC1 = 49.95 %", y = "PC2 = 18.58 %" )  
+
+#PC2 vs PC3 -- color more precise paleoenvironments
+ggplot(as.data.frame(PC.scores_SR_pal), aes(x=PC.scores_SR_pal[,2], y=PC.scores_SR_pal[,3], label = names_SR_pal, fontface = "italic")) +
+  labs(fill="Paleoenvironments") +
+  coord_fixed(ratio = 1) +
+  geom_point(aes(fill = Period_SR_pal$Paleoenvironments), color = "black", size = 4, shape = 21, stroke = 0.10)  +
+  scale_fill_manual(values = cols_habitats2)+
+  lims(x=c(-0.3,0.3), y = c(-0.3,0.3)) +
+  theme_bw() +
+  theme(axis.text.x = element_text(size = 25, color="black", margin = margin(t = 5, r = 0, b = 0, l = 0)),
+        axis.text.y = element_text(size = 25, color="black", margin = margin(t = 0, r = 5, b = 0, l = 0)), 
+        axis.title.x = element_text(size = 29, margin = margin(t = 15, r = 0, b = 0, l = 0)), 
+        axis.title.y = element_text(size = 29, margin = margin(t = 0, r = 15, b = 0, l = 0))) +
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), legend.position = "none") +
+  labs(x = "PC2 = 18.58 %", y = "PC3 = 11.67 %" )
+
+################### Calculating convex hulls for the PC1 vs PC2 #######################
+
+# Add classifier variables (group, age, habitats) by hand to .csv file
+# loading .csv file with PC scores and classifiers:
+pca.class <- read.csv(file.choose()) #Open PC.scores_SR_pal.csv
+
+# for the more precise paleoenvironments
+CHull_habitat2_SR <- convex.hulls(data = pca.class, name.x = "Comp1", name.y = "Comp2", name.fill = "Habitat2")
+
+CHull_habitat2_SR.table <- CHull_habitat2_SR$table
+CHull_habitat2_SR$surface_area
+
+ggplot(pca.class, aes(x = Comp1,y = Comp2, fill = Habitat2)) +
+  labs(fill="Habitat2") +
+  coord_fixed(ratio = 1) +
+  geom_point(aes(fill = Habitat2), shape = 21, size = 5, stroke = 0.10) + 
+  scale_fill_manual(values = cols_habitats2) +
+  scale_color_manual(values= cols_habitats2)+
+  lims(x=c(-0.7,0.7), y = c(-0.45,0.35))+
+  theme_bw() +
+  theme(axis.text.x = element_text(size = 15, color="black", margin = margin(t = 5, r = 0, b = 0, l = 0)),
+        axis.text.y = element_text(size = 15, color="black", margin = margin(t = 0, r = 5, b = 0, l = 0)), 
+        axis.title.x = element_text(size = 15, margin = margin(t = 15, r = 0, b = 0, l = 0)), 
+        axis.title.y = element_text(size = 15, margin = margin(t = 0, r = 15, b = 0, l = 0))) +
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), legend.position = "none") +
+  labs(x = "PC1 = 49.95 %", y = "PC2 = 18.58 %" ) +
+  geom_polygon(data = CHull_habitat2_SR.table, aes(x = X, y = Y), alpha = 0.5)
+
+################################# Morphological disparity analyses ###########################################
+
+gdf_SR_habitat2 <- geomorph.data.frame(sym_pal$symm.shape, species = Period_SR_pal$Species, Habitat = Period_SR_pal$Paleoenvironments) #gdf for the more precise paleoenvironments
+names(gdf_SR_habitat2)<-c("coords", "species", "Habitat")
+
+# Sum of Procrustes variances : More precise aquatic habitats #########################
+
+SOV_mean_SR_pal <- morphol.disparity(coords ~ 1, groups= ~ Habitat, partial = TRUE, 
+                                     data = gdf_SR_habitat2, iter = 999, print.progress = FALSE) #calculate disparity of the time bins and comparing it to the grand mean
+
+summary(SOV_mean_SR_pal)
+
+SOV_SR_pal <- morphol.disparity(coords~Habitat,groups=~Habitat, data = gdf_SR_habitat2, iter = 999) # calculate the disparity within each bin, and compare that to the disparity within other bins. This tells which time bin is most/least disparate
+
+summary(SOV_SR_pal)
+
+# Graphical representation #
+
+# Contribution of each time bin : Pie chart
+
+PPV_SR.pal <- c("5.861", "7.774", "19.761", "2.107", "18.222", "18.067", "12.270", "15.938") # copy the SOV_mean_SR_pal results
+Habitat2 <- c("Alluvial plain", "Bay", "Calm  freshwater lake", "Coastal marine", "Estuary", "Lagoon", "Oxbow lake/meandering river", "Reef")
+PPV_SR.pal <- as.numeric(as.character(PPV_SR.pal))
+Habitat2 <- as.factor(as.character(Habitat2))
+
+DF_PPV.pal <- data.frame(Habitats = Habitat2, PPV = PPV_SR.pal)
+DF_PPV.pal # Create data frame Paleoenvironment x Proportion of variance
+
+# Compute percentages
+DF_PPV.pal$fraction = DF_PPV.pal$PPV / sum(DF_PPV.pal$PPV)
+
+# Compute the cumulative percentages (top of each rectangle)
+DF_PPV.pal$ymax = cumsum(DF_PPV.pal$fraction)
+
+# Compute the bottom of each rectangle
+DF_PPV.pal$ymin = c(0, head(DF_PPV.pal$ymax, n=-1))
+
+DF_PPV.pal$labelPosition <- (DF_PPV.pal$ymax + DF_PPV.pal$ymin) / 2
+
+# Compute a good label
+DF_PPV.pal$label <- paste0(DF_PPV.pal$PPV)
+
+# Make the plot
+ggplot(DF_PPV.pal, aes(ymax=ymax, ymin=ymin, xmax=4, xmin=3, fill=Habitat2)) +
+  geom_rect() + 
+  coord_polar(theta="y") +
+  scale_fill_manual(values = cols_habitats2) +
+  xlim(c(2, 4)) +
+  geom_label( x=3.5, aes(y=labelPosition, label=label, size=6)) +
+  theme_void() +
+  theme(legend.position = "none") #donut chart
+
+ggplot(DF_PPV.pal, aes(x="", y=PPV, fill=Habitat2)) +
+  geom_bar(stat="identity", width=1) +
+  coord_polar("y", start=0) +
+  scale_fill_manual(values = cols_habitats2) +
+  theme_void() #Pie chart
+
+
+#####################################################################################
+################################### SCREE PLOTS #####################################
+#####################################################################################
+
+var_expl_PC <- (pca_PC$sdev^2) / sum(pca_PC$sdev^2) * 100  
+
+# Plot
+plot(var_expl_PC, type = "b", pch = 19, col = "steelblue",
+     xlab = "Principal component",
+     ylab = "Explained variance (%)",
+     main = "Scree plot PC (Procrustes PCA)")
+
+# threshold 5%
+abline(h = 5, col = "red", lty = 2) 
+
+var_expl_Cheek <- (pca_Cheek$sdev^2) / sum(pca_Cheek$sdev^2) * 100
+
+# Plot
+plot(var_expl_Cheek, type = "b", pch = 19, col = "steelblue",
+     xlab = "Principal component",
+     ylab = "Explained variance (%)",
+     main = "Scree plot Cheek (Procrustes PCA)")
+
+# threshold 5%
+abline(h = 5, col = "red", lty = 2)
+
+
+var_expl_SR <- (pca_sym.SR$sdev^2) / sum(pca_sym.SR$sdev^2) * 100
+
+# Plot
+plot(var_expl_SR, type = "b", pch = 19, col = "steelblue",
+     xlab = "Principal component",
+     ylab = "Explained variance (%)",
+     main = "Scree plot Skull roof (Procrustes PCA)")
+
+# threshold 5%
+abline(h = 5, col = "red", lty = 2)
+
+#############################################################################
+########################### WEIGHTED AREA ###################################
+#############################################################################
+
+pca.class <- read.csv(file.choose())
+
+# Calculate surface area for each pair of axes
+
+# Epoch
+
+CHull <- convex.hulls(data = pca.class, name.x = "Comp4", name.y = "Comp5", name.fill = "Epoch")
+
+CHull.table <- CHull$table
+CHull$surface_area
+
+# Aquatic habitat 
+
+CHull <- convex.hulls(data = pca.class, name.x = "Comp4", name.y = "Comp5", name.fill = "Habitat")
+
+CHull.table <- CHull$table
+CHull$surface_area
+
+# Paleoenvironment
+
+CHull <- convex.hulls(data = pca.class, name.x = "Comp1", name.y = "Comp5", name.fill = "Habitat2")
+
+CHull.table <- CHull$table
+CHull$surface_area
+
+# Group
+
+CHull <- convex.hulls(data = pca.class, name.x = "Comp4", name.y = "Comp5", name.fill = "Group")
+
+CHull.table <- CHull$table
+CHull$surface_area
+
+
+# Open files with areas for the 5 first axes
+
+area_PC <- read_excel(file.choose(),1) # Body shape
+area_PC <- as.data.frame(area_PC)
+area_PC <- area_PC %>%
+  mutate_if(is.character, as.factor)
+ 
+rownames(area_PC) <- make.unique(as.character(area_PC$Class))
+area_PC$Class <- NULL
+
+area_Cheek <- read_excel(file.choose(),1) # Cheek
+area_Cheek <- as.data.frame(area_Cheek)
+area_Cheek <- area_Cheek %>%
+  mutate_if(is.character, as.factor)
+
+rownames(area_Cheek) <- make.unique(as.character(area_Cheek$Class))
+area_Cheek$Class <- NULL
+
+area_SR <- read_excel(file.choose(),1) # Skull roof
+area_SR <- as.data.frame(area_SR)
+area_SR <- area_SR %>%
+  mutate_if(is.character, as.factor)
+
+rownames(area_SR) <- make.unique(as.character(area_SR$Class))
+area_SR$Class <- NULL
+
+# Explained variance of each axis
+
+var_explained_PC <- (pca_PC$sdev)^2 / sum(pca_PC$sdev^2)
+var_explained_PC # Explained variance - Body shape
+var_explained_PC <- as.data.frame(var_explained_PC)
+
+var_explained_Cheek <- (pca_Cheek$sdev)^2 / sum(pca_Cheek$sdev^2)
+var_explained_Cheek # Explained variance - Cheek
+var_explained_Cheek <- as.data.frame(var_explained_Cheek)
+
+var_explained_SR <- (pca_sym.SR$sdev)^2 / sum(pca_sym.SR$sdev^2)
+var_explained_SR # Explained variance - Skull roof
+var_explained_SR <- as.data.frame(var_explained_SR)
+
+########################## BODY SHAPE ###################################
+# Explained variance for two axes - Simple additive weighting
+
+saw_PC_12 <- (sum(var_explained_PC$var_explained_PC[1:2]))/2
+saw_PC_13 <- (sum(var_explained_PC$var_explained_PC[1],var_explained_PC$var_explained_PC[3]))/2
+saw_PC_14 <- (sum(var_explained_PC$var_explained_PC[1],var_explained_PC$var_explained_PC[4]))/2
+saw_PC_15 <- (sum(var_explained_PC$var_explained_PC[1],var_explained_PC$var_explained_PC[5]))/2
+saw_PC_23 <- (sum(var_explained_PC$var_explained_PC[2],var_explained_PC$var_explained_PC[3]))/2
+saw_PC_24 <- (sum(var_explained_PC$var_explained_PC[2],var_explained_PC$var_explained_PC[4]))/2
+saw_PC_25 <- (sum(var_explained_PC$var_explained_PC[2],var_explained_PC$var_explained_PC[5]))/2
+saw_PC_34 <- (sum(var_explained_PC$var_explained_PC[3],var_explained_PC$var_explained_PC[4]))/2
+saw_PC_35 <- (sum(var_explained_PC$var_explained_PC[3],var_explained_PC$var_explained_PC[5]))/2
+saw_PC_45 <- (sum(var_explained_PC$var_explained_PC[4],var_explained_PC$var_explained_PC[5]))/2 
+
+# Explained variance for two axes - Weighted sum of pairwise area
+wspa_PC_12 <- var_explained_PC$var_explained_PC[1]*var_explained_PC$var_explained_PC[2]
+wspa_PC_13 <- var_explained_PC$var_explained_PC[1]*var_explained_PC$var_explained_PC[3]
+wspa_PC_14 <- var_explained_PC$var_explained_PC[1]*var_explained_PC$var_explained_PC[4]
+wspa_PC_15 <- var_explained_PC$var_explained_PC[1]*var_explained_PC$var_explained_PC[5]
+wspa_PC_23 <- var_explained_PC$var_explained_PC[2]*var_explained_PC$var_explained_PC[3]
+wspa_PC_24 <- var_explained_PC$var_explained_PC[2]*var_explained_PC$var_explained_PC[4]
+wspa_PC_25 <- var_explained_PC$var_explained_PC[2]*var_explained_PC$var_explained_PC[5]
+wspa_PC_34 <- var_explained_PC$var_explained_PC[3]*var_explained_PC$var_explained_PC[4]
+wspa_PC_35 <- var_explained_PC$var_explained_PC[3]*var_explained_PC$var_explained_PC[5]
+wspa_PC_45 <- var_explained_PC$var_explained_PC[4]*var_explained_PC$var_explained_PC[5]
+
+
+# Create data frame with the PCs pairs weight
+pc_pairs <- c("PC1 vs PC2", "PC1 vs PC3", "PC1 vs PC4", "PC1 vs PC5", "PC2 vs PC3", "PC2 vs PC4", "PC2 vs PC5", "PC3 vs PC4", "PC3 vs PC5", "PC4 vs PC5")
+SAW_PC <- c(saw_PC_12, saw_PC_13, saw_PC_14, saw_PC_15, saw_PC_23, saw_PC_24, saw_PC_25, saw_PC_34, saw_PC_35, saw_PC_45)
+WSPA_PC <- c(wspa_PC_12, wspa_PC_13, wspa_PC_14, wspa_PC_15, wspa_PC_23, wspa_PC_24, wspa_PC_25, wspa_PC_34, wspa_PC_35, wspa_PC_45)
+
+weight_PC <- data.frame(pc_pairs, SAW_PC, WSPA_PC)
+
+print(weight_PC)
+
+write_xlsx(weight_PC, "weight_PC.xlsx")
+
+######################################## CHEEK #######################################
+# Explained variance for two axes - Simple additive weighting
+
+saw_Cheek_12 <- (sum(var_explained_Cheek$var_explained_Cheek[1:2]))/2
+saw_Cheek_13 <- (sum(var_explained_Cheek$var_explained_Cheek[1],var_explained_Cheek$var_explained_Cheek[3]))/2
+saw_Cheek_14 <- (sum(var_explained_Cheek$var_explained_Cheek[1],var_explained_Cheek$var_explained_Cheek[4]))/2
+saw_Cheek_15 <- (sum(var_explained_Cheek$var_explained_Cheek[1],var_explained_Cheek$var_explained_Cheek[5]))/2
+saw_Cheek_23 <- (sum(var_explained_Cheek$var_explained_Cheek[2],var_explained_Cheek$var_explained_Cheek[3]))/2
+saw_Cheek_24 <- (sum(var_explained_Cheek$var_explained_Cheek[2],var_explained_Cheek$var_explained_Cheek[4]))/2
+saw_Cheek_25 <- (sum(var_explained_Cheek$var_explained_Cheek[2],var_explained_Cheek$var_explained_Cheek[5]))/2
+saw_Cheek_34 <- (sum(var_explained_Cheek$var_explained_Cheek[3],var_explained_Cheek$var_explained_Cheek[4]))/2
+saw_Cheek_35 <- (sum(var_explained_Cheek$var_explained_Cheek[3],var_explained_Cheek$var_explained_Cheek[5]))/2
+saw_Cheek_45 <- (sum(var_explained_Cheek$var_explained_Cheek[4],var_explained_Cheek$var_explained_Cheek[5]))/2 
+
+# Explained variance for two axes - Weighted sum of pairwise area
+wspa_Cheek_12 <- var_explained_Cheek$var_explained_Cheek[1]*var_explained_Cheek$var_explained_Cheek[2]
+wspa_Cheek_13 <- var_explained_Cheek$var_explained_Cheek[1]*var_explained_Cheek$var_explained_Cheek[3]
+wspa_Cheek_14 <- var_explained_Cheek$var_explained_Cheek[1]*var_explained_Cheek$var_explained_Cheek[4]
+wspa_Cheek_15 <- var_explained_Cheek$var_explained_Cheek[1]*var_explained_Cheek$var_explained_Cheek[5]
+wspa_Cheek_23 <- var_explained_Cheek$var_explained_Cheek[2]*var_explained_Cheek$var_explained_Cheek[3]
+wspa_Cheek_24 <- var_explained_Cheek$var_explained_Cheek[2]*var_explained_Cheek$var_explained_Cheek[4]
+wspa_Cheek_25 <- var_explained_Cheek$var_explained_Cheek[2]*var_explained_Cheek$var_explained_Cheek[5]
+wspa_Cheek_34 <- var_explained_Cheek$var_explained_Cheek[3]*var_explained_Cheek$var_explained_Cheek[4]
+wspa_Cheek_35 <- var_explained_Cheek$var_explained_Cheek[3]*var_explained_Cheek$var_explained_Cheek[5]
+wspa_Cheek_45 <- var_explained_Cheek$var_explained_Cheek[4]*var_explained_Cheek$var_explained_Cheek[5]
+
+
+pc_pairs <- c("PC1 vs PC2", "PC1 vs PC3", "PC1 vs PC4", "PC1 vs PC5", "PC2 vs PC3", "PC2 vs PC4", "PC2 vs PC5", "PC3 vs PC4", "PC3 vs PC5", "PC4 vs PC5")
+SAW_Cheek <- c(saw_Cheek_12, saw_Cheek_13, saw_Cheek_14, saw_Cheek_15, saw_Cheek_23, saw_Cheek_24, saw_Cheek_25, saw_Cheek_34, saw_Cheek_35, saw_Cheek_45)
+WSPA_Cheek <- c(wspa_Cheek_12, wspa_Cheek_13, wspa_Cheek_14, wspa_Cheek_15, wspa_Cheek_23, wspa_Cheek_24, wspa_Cheek_25, wspa_Cheek_34, wspa_Cheek_35, wspa_Cheek_45)
+
+weight_Cheek <- data.frame(pc_pairs, SAW_Cheek, WSPA_Cheek)
+
+print(weight_Cheek)
+
+write_xlsx(weight_Cheek, "weight_Cheek.xlsx")
+
+################################## SKULL ROOF ##################################
+# Explained variance for two axes - Simple additive weighting
+
+saw_SR_12 <- (sum(var_explained_SR$var_explained_SR[1:2]))/2
+saw_SR_13 <- (sum(var_explained_SR$var_explained_SR[1],var_explained_SR$var_explained_SR[3]))/2
+saw_SR_14 <- (sum(var_explained_SR$var_explained_SR[1],var_explained_SR$var_explained_SR[4]))/2
+saw_SR_15 <- (sum(var_explained_SR$var_explained_SR[1],var_explained_SR$var_explained_SR[5]))/2
+saw_SR_23 <- (sum(var_explained_SR$var_explained_SR[2],var_explained_SR$var_explained_SR[3]))/2
+saw_SR_24 <- (sum(var_explained_SR$var_explained_SR[2],var_explained_SR$var_explained_SR[4]))/2
+saw_SR_25 <- (sum(var_explained_SR$var_explained_SR[2],var_explained_SR$var_explained_SR[5]))/2
+saw_SR_34 <- (sum(var_explained_SR$var_explained_SR[3],var_explained_SR$var_explained_SR[4]))/2
+saw_SR_35 <- (sum(var_explained_SR$var_explained_SR[3],var_explained_SR$var_explained_SR[5]))/2
+saw_SR_45 <- (sum(var_explained_SR$var_explained_SR[4],var_explained_SR$var_explained_SR[5]))/2 
+
+# Explained variance for two axes - Weighted sum of pairwise area
+wspa_SR_12 <- var_explained_SR$var_explained_SR[1]*var_explained_SR$var_explained_SR[2]
+wspa_SR_13 <- var_explained_SR$var_explained_SR[1]*var_explained_SR$var_explained_SR[3]
+wspa_SR_14 <- var_explained_SR$var_explained_SR[1]*var_explained_SR$var_explained_SR[4]
+wspa_SR_15 <- var_explained_SR$var_explained_SR[1]*var_explained_SR$var_explained_SR[5]
+wspa_SR_23 <- var_explained_SR$var_explained_SR[2]*var_explained_SR$var_explained_SR[3]
+wspa_SR_24 <- var_explained_SR$var_explained_SR[2]*var_explained_SR$var_explained_SR[4]
+wspa_SR_25 <- var_explained_SR$var_explained_SR[2]*var_explained_SR$var_explained_SR[5]
+wspa_SR_34 <- var_explained_SR$var_explained_SR[3]*var_explained_SR$var_explained_SR[4]
+wspa_SR_35 <- var_explained_SR$var_explained_SR[3]*var_explained_SR$var_explained_SR[5]
+wspa_SR_45 <- var_explained_SR$var_explained_SR[4]*var_explained_SR$var_explained_SR[5]
+
+
+pc_pairs <- c("PC1 vs PC2", "PC1 vs PC3", "PC1 vs PC4", "PC1 vs PC5", "PC2 vs PC3", "PC2 vs PC4", "PC2 vs PC5", "PC3 vs PC4", "PC3 vs PC5", "PC4 vs PC5")
+SAW_SR <- c(saw_SR_12, saw_SR_13, saw_SR_14, saw_SR_15, saw_SR_23, saw_SR_24, saw_SR_25, saw_SR_34, saw_SR_35, saw_SR_45)
+WSPA_SR <- c(wspa_SR_12, wspa_SR_13, wspa_SR_14, wspa_SR_15, wspa_SR_23, wspa_SR_24, wspa_SR_25, wspa_SR_34, wspa_SR_35, wspa_SR_45)
+
+weight_SR <- data.frame(pc_pairs, SAW_SR, WSPA_SR)
+
+print(weight_SR)
+write_xlsx(weight_SR, "weight_SR.xlsx")
