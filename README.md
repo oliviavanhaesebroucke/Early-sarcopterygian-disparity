@@ -1,5 +1,5 @@
 # Early-sarcopterygian-disparity
-Data and code supporting the analyses in the study "Early sarcopterygian morphological disparity: shaping up for a major transition"
+Data and code supporting the analyses in the study "Early sarcopterygian morphological disparity through the Devonian-Carboniferous crisis"
 Authors: Olivia Vanhaesebroucke, Olivier Larouche and Richard Cloutier
 
 This dataset contains landmarks coordinates for geometric morphometrics analyses. 
